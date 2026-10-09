@@ -1,0 +1,5 @@
+dataset,files,format,rows,columns,size_MB
+DS01_Rectifier_Data,ANOM_DS01_Rectifier_Data Part 1.csv | ANOM_DS01_Rectifier_Data Part 2.csv | ANOM_DS01_Rectifier_Data Part 3.csv,"CSV (comma, UTF-8, LF)",867257,63,196.2
+DS02_SiteLocations,ANOM_DS02_SiteLocations.csv,"CSV (comma, UTF-8, LF)",49693,10,4.0
+DS03_SiteInventory,ANOM_DS03_SiteInventory_in_.csv,"CSV (comma, UTF-8, LF)",175379,26,39.2
+DS04_WeatherData,ANOM_DS04_WeatherData.csv,"CSV (comma, UTF-8, LF)",14088,34,3.3
