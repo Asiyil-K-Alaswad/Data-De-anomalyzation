@@ -137,6 +137,7 @@ select { font: inherit; padding: 4px 8px; border: 1px solid var(--border); borde
 .lbl { color: var(--text-secondary); font-size: 13px; }
 .sech { margin: 28px 0 6px; font-size: 16px; text-transform: none; letter-spacing: 0; color: var(--text-primary); }
 #fitTbl th:nth-child(2), #fitTbl td:nth-child(2) { text-align: left; }
+#fitTbl th:nth-child(4), #fitTbl td:nth-child(4) { text-align: right; }
 .anc { pointer-events: none; }
 .anc rect { fill: none; stroke: var(--text-muted); stroke-width: 1px; stroke-dasharray: 3 3; }
 .anc line { stroke: var(--text-primary); stroke-width: 1.5px; }
@@ -261,7 +262,7 @@ th { position: sticky; top: 0; background: var(--surface-1); color: var(--text-s
     <p class="sub" id="fitText"></p>
     <div class="stats" id="fitStats"></div>
     <div class="tablewrap"><table id="fitTbl"><thead><tr>
-      <th>Code</th><th>Anchor cells from</th><th>DS02 sites</th><th>Anchor cells</th><th>In-sample error km</th><th>Held-out error km</th>
+      <th>Code</th><th>Anchor cells from</th><th>DS02 sites</th><th>Anchor cells</th><th>In-sample error km</th><th>Held out: code alone km</th><th>Held out: whole area km</th>
     </tr></thead><tbody></tbody></table></div>
     <p class="note" id="fitNote"></p>
   </section>
@@ -532,7 +533,9 @@ function drawFit(x = zt.rescaleX(x0), y = zt.rescaleY(y0), rk = Math.min(Math.sq
     .attr("x2", g => x(g.ex[2])).attr("y2", g => y(g.ey[2]));
   sel.select(".dm").attr("cx", g => x(g.mx)).attr("cy", g => y(g.my));
   sel.select(".am").attr("x", g => x(g.ex[2]) - 3.5).attr("y", g => y(g.ey[2]) - 3.5);
-  sel.select("text").attr("x", g => x(g.ex[2]) + 6).attr("y", g => y(g.ey[2]) + 3).text(g => g.code);
+  // Codes only for the focused anchor(s); the region labels already name every area.
+  sel.select("text").attr("x", g => x(g.ex[2]) + 6).attr("y", g => y(g.ey[2]) + 3)
+    .text(g => (focus && focus.includes(g.code) ? g.code : ""));
   if (focus) sel.filter(".hl").raise();
 }
 
@@ -560,7 +563,7 @@ function showTip(e, d) {
     <div class="row"><span>Site's LAC/TAC</span><span>${d.codes.join(", ")}</span></div>
     <div class="row"><span>Region here (${layer.label})</span><span>${d.region || "none"}</span></div>
     <div class="row"><span>Est. position</span><span>${fmt4(ll[0])}°N, ${fmt4(ll[1])}°E</span></div>
-    ${FIT && FIT.offLandSet.has(d.id) ? `<div class="row"><span>Fit</span><span>placed off land</span></div>` : ""}
+    ${FIT && FIT.offLandSet.has(d.id) ? `<div class="row"><span>Fit</span><span>placed ${FIT.offDist.get(d.id).toFixed(1)} km off land</span></div>` : ""}
     <div class="row"><span>Type</span><span>${d.type}</span></div>
     <div class="row"><span>Cells 2G/4G/5G</span><span>${d.c2} / ${d.c4} / ${d.c5}</span></div>`);
   const tw = tip.node().offsetWidth, th = tip.node().offsetHeight;
@@ -650,13 +653,14 @@ d3.select("#showLabels").on("change", drawRegions);
 d3.select("#showAnchors").on("change", () => drawFit());
 d3.select("#showOff").on("change", () => drawFit());
 if (FIT) {
-  FIT.offLandSet = new Set(FIT.offLand);
+  FIT.offDist = new Map(FIT.offLand);
+  FIT.offLandSet = new Set(FIT.offDist.keys());
   const f1 = d3.format(".1f");
   d3.select("#fitText").html(FIT.text);
   d3.select("#fitStats").selectAll(".stat").data(FIT.tiles).join("div").attr("class", "stat")
     .html(d => `<div class="v">${d[0]}</div><div class="l">${d[1]}</div>`);
   d3.select("#fitTbl tbody").selectAll("tr").data(FIT.groups).join("tr")
-    .html(g => `<td>${g.code}</td><td>${g.tech}</td><td>${g.n_sites}</td><td>${g.n_anchor}</td><td>${f1(g.res)}</td><td>${f1(g.loo)}</td>`);
+    .html(g => `<td>${g.code}</td><td>${g.tech}</td><td>${g.n_sites}</td><td>${g.n_anchor}</td><td>${f1(g.res)}</td><td>${f1(g.loo)}</td><td>${f1(g.looArea)}</td>`);
   d3.select("#fitNote").html(FIT.note);
 }
 d3.select("#layerSel").selectAll("option").data(RG.layers).join("option")
