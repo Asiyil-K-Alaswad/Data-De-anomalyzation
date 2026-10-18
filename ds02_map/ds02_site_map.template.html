@@ -179,7 +179,7 @@ th { position: sticky; top: 0; background: var(--surface-1); color: var(--text-s
         <div class="ctl"><label for="ty">Shift north (km)</label><input type="number" id="tyN" step="0.5" aria-label="Shift north km"><input type="range" id="ty" min="-200" max="200" step="0.5"></div>
         <label class="check"><input type="checkbox" id="flip"> Mirror east–west</label>
         <label class="check"><input type="checkbox" id="latc"> <span>Rescale east–west distances to Qatar's latitude (×<span id="latk"></span>)</span></label>
-        <p class="note">The scales apply along the screen's horizontal and vertical axes, after rotation.</p>
+        <p class="note">The scales stretch the point cloud along its own original horizontal and vertical axes, before rotation, so rotating never changes the distances between points.</p>
         <div class="btnrow">
           <button class="plain" id="align">Align long axis north–south</button>
           <button class="plain" id="resetT">Reset transform</button>
@@ -251,12 +251,13 @@ const DEFAULT_T = { rot: 0, sx: 1, sy: 1, tx: 0, ty: 0, flip: false, latc: true,
 let T = { ...DEFAULT_T };
 try { const s = JSON.parse(localStorage.getItem("ds02-qatar-fit")); if (s) T = { ...DEFAULT_T, ...s }; } catch (e) {}
 
-// site (km about its own centroid) -> Qatar km frame
+// site (km about its own centroid) -> Qatar km frame.
+// Scale is applied in the cloud's own frame, then rotated, so rotating is
+// rigid: only the scales change the distances between points.
 function xf(d) {
-  let x = d.x * (T.latc ? LATK : 1) * (T.flip ? -1 : 1), y = d.y;
+  const x = d.x * (T.latc ? LATK : 1) * (T.flip ? -1 : 1) * T.sx, y = d.y * T.sy;
   const c = Math.cos(T.rot * RAD), s = Math.sin(T.rot * RAD);
-  const xr = x * c - y * s, yr = x * s + y * c;
-  return [xr * T.sx + T.tx, yr * T.sy + T.ty];
+  return [x * c - y * s + T.tx, x * s + y * c + T.ty];
 }
 function applyAll() { for (const d of sites) { const p = xf(d); d.X = p[0]; d.Y = p[1]; } }
 
@@ -453,7 +454,7 @@ d3.select("#resetT").on("click", () => { T = { ...DEFAULT_T }; changed(); });
 
 // Rotate so the cloud's principal axis points north (keeps scale/shift).
 d3.select("#align").on("click", () => {
-  const xs = sites.map(d => d.x * (T.latc ? LATK : 1) * (T.flip ? -1 : 1)), ys = sites.map(d => d.y);
+  const xs = sites.map(d => d.x * (T.latc ? LATK : 1) * (T.flip ? -1 : 1) * T.sx), ys = sites.map(d => d.y * T.sy);
   const mx = d3.mean(xs), my = d3.mean(ys);
   let sxx = 0, syy = 0, sxy = 0;
   xs.forEach((x, i) => { const a = x - mx, b = ys[i] - my; sxx += a * a; syy += b * b; sxy += a * b; });

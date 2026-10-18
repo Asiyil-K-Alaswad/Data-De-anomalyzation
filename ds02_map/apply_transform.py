@@ -23,11 +23,12 @@ lat0, lon0 = outline["lat0"], outline["lon0"]
 
 # Same steps, in the same order, as xf() in the page.
 latk = np.cos(np.radians(lat0)) / np.cos(np.radians(sites.LAT.mean()))
-x = sites.X_KM * (latk if T["latc"] else 1) * (-1 if T["flip"] else 1)
-y = sites.Y_KM
+# Scale in the cloud's own frame first, then rotate (rotation is rigid).
+x = sites.X_KM * (latk if T["latc"] else 1) * (-1 if T["flip"] else 1) * T["sx"]
+y = sites.Y_KM * T["sy"]
 c, s = np.cos(np.radians(T["rot"])), np.sin(np.radians(T["rot"]))
-fx = (x * c - y * s) * T["sx"] + T["tx"]
-fy = (x * s + y * c) * T["sy"] + T["ty"]
+fx = x * c - y * s + T["tx"]
+fy = x * s + y * c + T["ty"]
 
 sites["FIT_X_KM"] = fx.round(3)
 sites["FIT_Y_KM"] = fy.round(3)
