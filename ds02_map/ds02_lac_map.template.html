@@ -214,7 +214,7 @@ th { position: sticky; top: 0; background: var(--surface-1); color: var(--text-s
         <p class="note">View scale stretches the cloud as it looks on screen right now. When you rotate afterwards, that stretch is locked into the cloud's shape and these sliders go back to 1×, so rotating never reshapes it. <span id="shapeNote"></span></p>
         <div class="ctl"><label for="tx">Shift east (km)</label><input type="number" id="txN" step="0.5" aria-label="Shift east km"><input type="range" id="tx" min="-200" max="200" step="0.5"></div>
         <div class="ctl"><label for="ty">Shift north (km)</label><input type="number" id="tyN" step="0.5" aria-label="Shift north km"><input type="range" id="ty" min="-200" max="200" step="0.5"></div>
-        <label class="check"><input type="checkbox" id="flip"> Mirror east–west</label>
+        <label class="check"><input type="checkbox" id="flip"> Mirror east–west (as shown on screen)</label>
         <label class="check"><input type="checkbox" id="latc"> <span>Rescale east–west distances to Qatar's latitude (×<span id="latk"></span>)</span></label>
         <p class="note">Rotation turns the cloud without changing the distances between points; only the scales do that.</p>
         <div class="btnrow">
@@ -339,6 +339,18 @@ function bakeView() {
   T.A = [m00 * a + m01 * cc, m00 * b + m01 * d, m01 * a + m11 * cc, m01 * b + m11 * d];
   T.vx = 1; T.vy = 1;
 }
+// Mirror the points as they appear on screen (after rotation and view scale)
+// across the vertical line through the pivot. Mx commutes with the diagonal
+// view scale, so Mx·V·R·A = V·R·(R^-1·Mx·R)·A: fold it into A and the view
+// sliders and rotation keep their values.
+function mirrorView() {
+  const c2 = Math.cos(2 * T.rot * RAD), s2 = Math.sin(2 * T.rot * RAD);
+  const [a, b, c, d] = T.A;   // A <- [[-c2, s2], [s2, c2]] · A
+  T.A = [-c2 * a + s2 * c, -c2 * b + s2 * d, s2 * a + c2 * c, s2 * b + c2 * d];
+}
+// Mirrored overall = the linear map has negative determinant (T.flip is only
+// kept so fits saved before this change still load the same).
+const mirrored = () => ((T.A[0] * T.A[3] - T.A[1] * T.A[2]) < 0) !== !!T.flip;
 function applyAll() { for (const d of sites) { const p = xf(d); d.X = p[0]; d.Y = p[1]; classify(d); } }
 
 const active = new Set(STATUSES.map(t => t.key));
@@ -528,7 +540,8 @@ function syncControls() {
   const skewed = T.A.some((v, i) => Math.abs(v - [1, 0, 0, 1][i]) > 1e-9);
   d3.select("#shapeNote").text(skewed ? "A view stretch is currently locked in." : "");
   d3.select("#resetShape").property("disabled", !skewed);
-  for (const k of ["flip", "latc", "lock"]) d3.select("#" + k).property("checked", T[k]);
+  for (const k of ["latc", "lock"]) d3.select("#" + k).property("checked", T[k]);
+  d3.select("#flip").property("checked", mirrored());
   d3.select("#params").property("value", JSON.stringify(T, null, 1));
 }
 let raf = 0;
@@ -556,7 +569,8 @@ for (const k of NUM) {
   d3.select("#" + k).on("input", handler);
   d3.select("#" + k + "N").on("change", handler);
 }
-for (const k of ["flip", "latc", "lock"]) d3.select("#" + k).on("change", function () { T[k] = this.checked; changed(); });
+for (const k of ["latc", "lock"]) d3.select("#" + k).on("change", function () { T[k] = this.checked; changed(); });
+d3.select("#flip").on("change", () => { mirrorView(); changed(); });
 d3.select("#showMap").on("change", render);
 d3.select("#showTowns").on("change", render);
 d3.select("#showRegions").on("change", drawRegions);
