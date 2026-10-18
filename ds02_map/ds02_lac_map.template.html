@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>DS02 LAC Map</title>
+<title>__PAGETITLE__</title>
 <style>
 :root {
   color-scheme: light;
@@ -135,6 +135,18 @@ button.plain:hover { border-color: var(--text-muted); }
 .ico { display: inline-block; width: 14px; height: 14px; border-radius: 50%; color: #fff; font-size: 10px; line-height: 14px; text-align: center; font-weight: 700; }
 select { font: inherit; padding: 4px 8px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface-1); color: var(--text-primary); }
 .lbl { color: var(--text-secondary); font-size: 13px; }
+.sech { margin: 28px 0 6px; font-size: 16px; text-transform: none; letter-spacing: 0; color: var(--text-primary); }
+#fitTbl th:nth-child(2), #fitTbl td:nth-child(2) { text-align: left; }
+.anc { pointer-events: none; }
+.anc rect { fill: none; stroke: var(--text-muted); stroke-width: 1px; stroke-dasharray: 3 3; }
+.anc line { stroke: var(--text-primary); stroke-width: 1.5px; }
+.anc .am { fill: var(--surface-1); stroke: var(--text-primary); stroke-width: 1.5px; }
+.anc .dm { fill: var(--text-primary); stroke: var(--surface-1); stroke-width: 1px; }
+.anc text { fill: var(--text-secondary); font-size: 10px; paint-order: stroke; stroke: var(--surface-1); stroke-width: 3px; }
+.anc.hl rect { stroke: var(--accent); stroke-width: 2px; stroke-dasharray: none; }
+.anc.hl line { stroke: var(--accent); stroke-width: 2.5px; }
+.anc.dim { opacity: .2; }
+.flag { fill: none; stroke: var(--text-primary); stroke-width: 1.5px; pointer-events: none; }
 .pair { display: inline-flex; gap: 6px; align-items: center; white-space: nowrap; }
 .site.hl { stroke: var(--focus); stroke-width: 2px; }
 .pivot { fill: none; stroke: var(--text-primary); stroke-width: 1.5px; }
@@ -174,8 +186,8 @@ th { position: sticky; top: 0; background: var(--surface-1); color: var(--text-s
 </head>
 <body>
 <main>
-  <h1>DS02 sites against OpenCelliD LAC/TAC regions</h1>
-  <p class="sub">Qatar is divided into location/tracking areas built from OpenCelliD cells of network 427-02, the operator whose area codes DS02 uses. Each DS02 site is coloured by whether the region it currently sits in carries one of the site's own LAC/TAC codes. Rotate, stretch and move the point cloud to raise the match rate; the regions never move. Marker size shows each site's total cell count.</p>
+  <h1>__H1__</h1>
+  <p class="sub">__LEDE__</p>
 
   <div class="controls" role="toolbar" aria-label="Filters and mode">
     <span id="chips"></span>
@@ -215,7 +227,7 @@ th { position: sticky; top: 0; background: var(--surface-1); color: var(--text-s
         <div class="ctl"><label for="tx">Shift east (km)</label><input type="number" id="txN" step="0.5" aria-label="Shift east km"><input type="range" id="tx" min="-200" max="200" step="0.5"></div>
         <div class="ctl"><label for="ty">Shift north (km)</label><input type="number" id="tyN" step="0.5" aria-label="Shift north km"><input type="range" id="ty" min="-200" max="200" step="0.5"></div>
         <label class="check"><input type="checkbox" id="flip"> Mirror east–west (as shown on screen)</label>
-        <label class="check"><input type="checkbox" id="latc"> <span>Rescale east–west distances to Qatar's latitude (×<span id="latk"></span>)</span></label>
+        <label class="check" id="latcRow"><input type="checkbox" id="latc"> <span>Rescale east–west distances to Qatar's latitude (×<span id="latk"></span>)</span></label>
         <p class="note">Rotation turns the cloud without changing the distances between points; only the scales do that.</p>
         <div class="btnrow">
           <button class="plain" id="align">Align long axis north–south</button>
@@ -228,6 +240,8 @@ th { position: sticky; top: 0; background: var(--surface-1); color: var(--text-s
         <label class="check"><input type="checkbox" id="showMap" checked> Show Qatar and neighbouring coastlines</label>
         <label class="check"><input type="checkbox" id="showRegions" checked> Show LAC/TAC region borders</label>
         <label class="check"><input type="checkbox" id="showLabels" checked> Show region codes</label>
+        <label class="check fitonly"><input type="checkbox" id="showAnchors" checked> Show OpenCelliD anchors (middle-50% box and median per code) and each code's DS02 median</label>
+        <label class="check fitonly"><input type="checkbox" id="showOff" checked> Ring the sites the fit places off land</label>
         <label class="check"><input type="checkbox" id="showTowns"> Show reference towns</label>
         <div class="ctl"><label for="ptAlpha">Point opacity</label><span></span><input type="range" id="ptAlpha" min="0.1" max="1" step="0.05" value="0.75"></div>
       </div>
@@ -241,6 +255,16 @@ th { position: sticky; top: 0; background: var(--surface-1); color: var(--text-s
   </div>
 
   <div class="stats" id="stats"></div>
+
+  <section class="fitonly" id="fitSection">
+    <h2 class="sech">How the fit was made and checked</h2>
+    <p class="sub" id="fitText"></p>
+    <div class="stats" id="fitStats"></div>
+    <div class="tablewrap"><table id="fitTbl"><thead><tr>
+      <th>Code</th><th>Anchor cells from</th><th>DS02 sites</th><th>Anchor cells</th><th>In-sample error km</th><th>Held-out error km</th>
+    </tr></thead><tbody></tbody></table></div>
+    <p class="note" id="fitNote"></p>
+  </section>
 
   <details>
     <summary>Table view (sites in the current filter, with estimated positions)</summary>
@@ -257,6 +281,10 @@ const RAW = __DATA__;
 const META = __META__;
 const OUTLINE = __OUTLINE__;
 const RG = __REGIONS__;
+// Present only on the de-anonymised page: the fitted affine and its validation.
+const FIT = META.fit || null;
+if (!FIT) d3.selectAll(".fitonly").remove();
+const STORE = META.storageKey || "ds02-qatar-fit";
 for (const L of RG.layers) {
   L.gridArr = Uint8Array.from(atob(L.grid), ch => ch.charCodeAt(0));
   L.codeSet = new Set(L.codes);
@@ -308,9 +336,13 @@ const latLonOf = (x, y) => [
 const wrapDeg = a => +((((a + 180) % 360) + 360) % 360 - 180).toFixed(1);
 // A is the view stretch locked in by earlier rotations, kept in the cloud's own
 // (pre-rotation) frame as a 2x2 matrix [a, b, c, d] = [[a, b], [c, d]].
-const DEFAULT_T = { rot: 0, sx: 1, sy: 1, vx: 1, vy: 1, tx: 0, ty: 0, A: [1, 0, 0, 1], flip: false, latc: true, lock: false };
+// On the de-anonymised page the points already sit at their fitted positions,
+// so the default (and Reset) is "no extra transform" around the fitted centroid.
+const DEFAULT_T = { rot: 0, sx: 1, sy: 1, vx: 1, vy: 1, tx: 0, ty: 0, A: [1, 0, 0, 1], flip: false, latc: !FIT, lock: false,
+                    ...(META.defaultT || {}) };
+if (FIT) d3.select("#latcRow").remove();
 let T = { ...DEFAULT_T };
-try { const s = JSON.parse(localStorage.getItem("ds02-qatar-fit")); if (s) T = { ...DEFAULT_T, ...s }; } catch (e) {}
+try { const s = JSON.parse(localStorage.getItem(STORE)); if (s) T = { ...DEFAULT_T, ...s }; } catch (e) {}
 
 // site (km about its own centroid) -> Qatar km frame:
 //   p' = V · R(rot) · A · S · p + t
@@ -381,6 +413,8 @@ const gLabels = svg.append("g");
 const gAxisX = svg.append("g").attr("class", "axis");
 const gAxisY = svg.append("g").attr("class", "axis");
 const gPts = svg.append("g");
+const gFlags = svg.append("g");
+const gAnchors = svg.append("g");
 const gTowns = svg.append("g");
 const pivot = svg.append("circle").attr("class", "pivot").attr("r", 7);
 const gScale = svg.append("g").attr("class", "scalebar");
@@ -407,9 +441,9 @@ function update() {
   pts = gPts.selectAll("circle").data(vis, d => d.id);
   pts.exit().remove();
   pts = pts.enter().append("circle").attr("class", "site")
-      .on("pointerenter", (e, d) => { hoverCodes = d.codes; showTip(e, d); drawRegions(); })
+      .on("pointerenter", (e, d) => { hoverCodes = d.codes; showTip(e, d); drawRegions(); drawFit(); })
       .on("pointermove", (e, d) => showTip(e, d))
-      .on("pointerleave", e => { hoverCodes = null; hideTip(e); drawRegions(); })
+      .on("pointerleave", e => { hoverCodes = null; hideTip(e); drawRegions(); drawFit(); })
     .merge(pts);
   pts.sort((a, b) => b.total - a.total);
   render();
@@ -431,6 +465,7 @@ function render() {
   const rk = Math.min(Math.sqrt(zt.k), 1.8);
   pts.attr("fill", d => colorOf(d.status)).attr("cx", d => x(d.X)).attr("cy", d => y(d.Y)).attr("r", d => rScale(d.total) * rk)
      .attr("fill-opacity", +d3.select("#ptAlpha").property("value"));
+  drawFit(x, y, rk);
   pivot.attr("cx", x(T.tx)).attr("cy", y(T.ty))
        .style("display", svg.classed("points-mode") ? null : "none");
 
@@ -465,6 +500,42 @@ function render() {
 }
 
 let hoverCodes = null;
+// Anchor envelopes (OpenCelliD middle 50% + median per code), each code's DS02
+// median under the current transform, and rings on the sites the fit put off land.
+function drawFit(x = zt.rescaleX(x0), y = zt.rescaleY(y0), rk = Math.min(Math.sqrt(zt.k), 1.8)) {
+  if (!FIT) return;
+  const showOff = d3.select("#showOff").property("checked");
+  const off = showOff ? sites.filter(s => FIT.offLandSet.has(s.id) && visible(s)) : [];
+  gFlags.selectAll("circle").data(off, d => d.id).join("circle").attr("class", "flag")
+    .attr("cx", d => x(d.X)).attr("cy", d => y(d.Y)).attr("r", d => rScale(d.total) * rk + 3.5);
+
+  const on = d3.select("#showAnchors").property("checked");
+  gAnchors.style("display", on ? null : "none");
+  if (!on) return;
+  const focus = hoverCodes || (codeFilter ? [codeFilter] : null);
+  const groups = FIT.groups.map(g => {
+    const m = sites.filter(s => s.codes.includes(g.code));
+    return { ...g, mx: d3.median(m, s => s.X), my: d3.median(m, s => s.Y) };
+  });
+  const sel = gAnchors.selectAll("g.anc").data(groups, g => g.code).join(enter => {
+    const a = enter.append("g").attr("class", "anc");
+    a.append("rect"); a.append("line"); a.append("circle").attr("class", "dm").attr("r", 3);
+    a.append("rect").attr("class", "am").attr("width", 7).attr("height", 7);
+    a.append("text");
+    return a;
+  });
+  sel.attr("class", g => "anc" + (focus ? (focus.includes(g.code) ? " hl" : " dim") : ""));
+  sel.select("rect:not(.am)")
+    .attr("x", g => x(g.ex[1])).attr("width", g => Math.max(1, x(g.ex[3]) - x(g.ex[1])))
+    .attr("y", g => y(g.ey[3])).attr("height", g => Math.max(1, y(g.ey[1]) - y(g.ey[3])));
+  sel.select("line").attr("x1", g => x(g.mx)).attr("y1", g => y(g.my))
+    .attr("x2", g => x(g.ex[2])).attr("y2", g => y(g.ey[2]));
+  sel.select(".dm").attr("cx", g => x(g.mx)).attr("cy", g => y(g.my));
+  sel.select(".am").attr("x", g => x(g.ex[2]) - 3.5).attr("y", g => y(g.ey[2]) - 3.5);
+  sel.select("text").attr("x", g => x(g.ex[2]) + 6).attr("y", g => y(g.ey[2]) + 3).text(g => g.code);
+  if (focus) sel.filter(".hl").raise();
+}
+
 function drawRegions() {
   const x = zt.rescaleX(x0), y = zt.rescaleY(y0);
   const line = d3.line().x(p => x(p[0])).y(p => y(p[1]));
@@ -489,6 +560,7 @@ function showTip(e, d) {
     <div class="row"><span>Site's LAC/TAC</span><span>${d.codes.join(", ")}</span></div>
     <div class="row"><span>Region here (${layer.label})</span><span>${d.region || "none"}</span></div>
     <div class="row"><span>Est. position</span><span>${fmt4(ll[0])}°N, ${fmt4(ll[1])}°E</span></div>
+    ${FIT && FIT.offLandSet.has(d.id) ? `<div class="row"><span>Fit</span><span>placed off land</span></div>` : ""}
     <div class="row"><span>Type</span><span>${d.type}</span></div>
     <div class="row"><span>Cells 2G/4G/5G</span><span>${d.c2} / ${d.c4} / ${d.c5}</span></div>`);
   const tw = tip.node().offsetWidth, th = tip.node().offsetHeight;
@@ -546,7 +618,7 @@ function syncControls() {
 }
 let raf = 0;
 function changed() {
-  try { localStorage.setItem("ds02-qatar-fit", JSON.stringify(T)); } catch (e) {}
+  try { localStorage.setItem(STORE, JSON.stringify(T)); } catch (e) {}
   syncControls();
   cancelAnimationFrame(raf);
   raf = requestAnimationFrame(() => {
@@ -575,6 +647,18 @@ d3.select("#showMap").on("change", render);
 d3.select("#showTowns").on("change", render);
 d3.select("#showRegions").on("change", drawRegions);
 d3.select("#showLabels").on("change", drawRegions);
+d3.select("#showAnchors").on("change", () => drawFit());
+d3.select("#showOff").on("change", () => drawFit());
+if (FIT) {
+  FIT.offLandSet = new Set(FIT.offLand);
+  const f1 = d3.format(".1f");
+  d3.select("#fitText").html(FIT.text);
+  d3.select("#fitStats").selectAll(".stat").data(FIT.tiles).join("div").attr("class", "stat")
+    .html(d => `<div class="v">${d[0]}</div><div class="l">${d[1]}</div>`);
+  d3.select("#fitTbl tbody").selectAll("tr").data(FIT.groups).join("tr")
+    .html(g => `<td>${g.code}</td><td>${g.tech}</td><td>${g.n_sites}</td><td>${g.n_anchor}</td><td>${f1(g.res)}</td><td>${f1(g.loo)}</td>`);
+  d3.select("#fitNote").html(FIT.note);
+}
 d3.select("#layerSel").selectAll("option").data(RG.layers).join("option")
   .attr("value", (L, i) => i).text(L => `${L.label} (${L.codes.length} codes)`);
 function fillCodes() {

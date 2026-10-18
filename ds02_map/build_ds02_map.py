@@ -95,14 +95,32 @@ html = (html.replace("__DATA__", json.dumps(rows))
 (OUT / "ds02_site_map.html").write_text(html)
 
 # ---- LAC/TAC region map (regions from build_lac_regions.py) ---------------
+def render_region_page(out_name, page_rows, page_meta, title, h1, lede):
+    """ds02_lac_map.template.html drives both the LAC map and the de-anonymised map."""
+    html = (OUT / "ds02_lac_map.template.html").read_text()
+    html = (html.replace("__PAGETITLE__", title).replace("__H1__", h1).replace("__LEDE__", lede)
+                .replace("__DATA__", json.dumps(page_rows))
+                .replace("__META__", json.dumps(page_meta))
+                .replace("__OUTLINE__", (OUT / "qatar_outline.json").read_text())
+                .replace("__REGIONS__", (OUT / "lac_regions.json").read_text()))
+    (OUT / out_name).write_text(html)
+
+
 lac_rows = [r + [[int(c) for c in codes.split(";")]]
             for r, codes in zip(rows, sites.LAC_TACS)]
-html = (OUT / "ds02_lac_map.template.html").read_text()
-html = (html.replace("__DATA__", json.dumps(lac_rows))
-            .replace("__META__", json.dumps(meta))
-            .replace("__OUTLINE__", (OUT / "qatar_outline.json").read_text())
-            .replace("__REGIONS__", (OUT / "lac_regions.json").read_text()))
-(OUT / "ds02_lac_map.html").write_text(html)
+render_region_page(
+    "ds02_lac_map.html", lac_rows, meta, "DS02 LAC Map",
+    "DS02 sites against OpenCelliD LAC/TAC regions",
+    "Qatar is divided into location/tracking areas built from OpenCelliD cells of network 427-02, "
+    "the operator whose area codes DS02 uses. Each DS02 site is coloured by whether the region it "
+    "currently sits in carries one of the site's own LAC/TAC codes. Rotate, stretch and move the point "
+    "cloud to raise the match rate; the regions never move. Marker size shows each site's total cell count.")
+
+# ---- de-anonymised map (fit from deanon/fit.py) ---------------------------
+if (OUT / "deanon" / "deanon_fit.json").exists():
+    from deanon.page_data import deanon_page   # noqa: E402  (needs the fit outputs)
+    d_rows, d_meta, d_text = deanon_page(sites, lac_rows, meta)
+    render_region_page("ds02_deanon_map.html", d_rows, d_meta, *d_text)
 
 print(sites[["X_KM", "Y_KM", "NN_KM"]].describe().round(2))
 print(sites.SITETYPE.value_counts(), (sites.N_LOCATIONS > 1).sum(), "sites with >1 location")
