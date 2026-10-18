@@ -128,6 +128,8 @@ button.plain:hover { border-color: var(--text-muted); }
 .check { display: flex; gap: 8px; align-items: center; margin: 6px 0; color: var(--text-secondary); font-size: 13px; }
 .check input { accent-color: var(--accent); }
 .btnrow { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.subhead { font-size: 13px; font-weight: 600; margin: 14px 0 6px; color: var(--text-primary); }
+.subhead span { font-weight: 400; color: var(--text-muted); }
 .note { color: var(--text-muted); font-size: 12px; margin: 6px 0 0; }
 textarea { width: 100%; font: 12px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace; background: var(--surface-0); color: var(--text-primary); border: 1px solid var(--border); border-radius: 8px; padding: 6px; resize: vertical; }
 .hint { color: var(--text-muted); font-size: 12px; margin-top: 8px; }
@@ -172,16 +174,22 @@ th { position: sticky; top: 0; background: var(--surface-1); color: var(--text-s
       <div class="panel">
         <h2>Transform points</h2>
         <div class="ctl"><label for="rot">Rotation (°)</label><input type="number" id="rotN" step="0.5" aria-label="Rotation degrees"><input type="range" id="rot" min="-180" max="180" step="0.5"></div>
-        <div class="ctl"><label for="sx">Horizontal scale (×)</label><input type="number" id="sxN" step="0.01" aria-label="Horizontal scale"><input type="range" id="sx" min="0.1" max="10" step="0.01"></div>
-        <div class="ctl"><label for="sy">Vertical scale (×)</label><input type="number" id="syN" step="0.01" aria-label="Vertical scale"><input type="range" id="sy" min="0.1" max="10" step="0.01"></div>
+        <h3 class="subhead">Fixed scale <span>along the cloud's own axes</span></h3>
+        <div class="ctl"><label for="sx">Horizontal (×)</label><input type="number" id="sxN" step="0.01" aria-label="Fixed horizontal scale"><input type="range" id="sx" min="0.1" max="10" step="0.01"></div>
+        <div class="ctl"><label for="sy">Vertical (×)</label><input type="number" id="syN" step="0.01" aria-label="Fixed vertical scale"><input type="range" id="sy" min="0.1" max="10" step="0.01"></div>
         <label class="check"><input type="checkbox" id="lock"> Lock aspect ratio (scale both together)</label>
+        <h3 class="subhead">View scale <span>along the screen's axes</span></h3>
+        <div class="ctl"><label for="vx">Horizontal (×)</label><input type="number" id="vxN" step="0.01" aria-label="View horizontal scale"><input type="range" id="vx" min="0.1" max="10" step="0.01"></div>
+        <div class="ctl"><label for="vy">Vertical (×)</label><input type="number" id="vyN" step="0.01" aria-label="View vertical scale"><input type="range" id="vy" min="0.1" max="10" step="0.01"></div>
+        <p class="note">View scale stretches the cloud as it looks on screen right now. When you rotate afterwards, that stretch is locked into the cloud's shape and these sliders go back to 1×, so rotating never reshapes it. <span id="shapeNote"></span></p>
         <div class="ctl"><label for="tx">Shift east (km)</label><input type="number" id="txN" step="0.5" aria-label="Shift east km"><input type="range" id="tx" min="-200" max="200" step="0.5"></div>
         <div class="ctl"><label for="ty">Shift north (km)</label><input type="number" id="tyN" step="0.5" aria-label="Shift north km"><input type="range" id="ty" min="-200" max="200" step="0.5"></div>
         <label class="check"><input type="checkbox" id="flip"> Mirror east–west</label>
         <label class="check"><input type="checkbox" id="latc"> <span>Rescale east–west distances to Qatar's latitude (×<span id="latk"></span>)</span></label>
-        <p class="note">The scales stretch the point cloud along its own original horizontal and vertical axes, before rotation, so rotating never changes the distances between points.</p>
+        <p class="note">Rotation turns the cloud without changing the distances between points; only the scales do that.</p>
         <div class="btnrow">
           <button class="plain" id="align">Align long axis north–south</button>
+          <button class="plain" id="resetShape">Clear locked view stretch</button>
           <button class="plain" id="resetT">Reset transform</button>
         </div>
       </div>
@@ -247,17 +255,38 @@ const latLonOf = (x, y) => [
 
 // ---- transform state --------------------------------------------------
 const wrapDeg = a => +((((a + 180) % 360) + 360) % 360 - 180).toFixed(1);
-const DEFAULT_T = { rot: 0, sx: 1, sy: 1, tx: 0, ty: 0, flip: false, latc: true, lock: false };
+// A is the view stretch locked in by earlier rotations, kept in the cloud's own
+// (pre-rotation) frame as a 2x2 matrix [a, b, c, d] = [[a, b], [c, d]].
+const DEFAULT_T = { rot: 0, sx: 1, sy: 1, vx: 1, vy: 1, tx: 0, ty: 0, A: [1, 0, 0, 1], flip: false, latc: true, lock: false };
 let T = { ...DEFAULT_T };
 try { const s = JSON.parse(localStorage.getItem("ds02-qatar-fit")); if (s) T = { ...DEFAULT_T, ...s }; } catch (e) {}
 
-// site (km about its own centroid) -> Qatar km frame.
-// Scale is applied in the cloud's own frame, then rotated, so rotating is
-// rigid: only the scales change the distances between points.
-function xf(d) {
+// site (km about its own centroid) -> Qatar km frame:
+//   p' = V · R(rot) · A · S · p + t
+// S = fixed scale (cloud axes), A = locked-in view stretch, R = rotation,
+// V = live view scale (screen axes). Rotating first bakes V into A, so
+// rotation itself is always rigid.
+function shaped(d) {
   const x = d.x * (T.latc ? LATK : 1) * (T.flip ? -1 : 1) * T.sx, y = d.y * T.sy;
+  const A = T.A;
+  return [A[0] * x + A[1] * y, A[2] * x + A[3] * y];
+}
+function xf(d) {
+  const [x, y] = shaped(d);
   const c = Math.cos(T.rot * RAD), s = Math.sin(T.rot * RAD);
-  return [x * c - y * s + T.tx, x * s + y * c + T.ty];
+  return [(x * c - y * s) * T.vx + T.tx, (x * s + y * c) * T.vy + T.ty];
+}
+// A <- R^-1 · V · R · A, then V = I: same picture, but the stretch now
+// belongs to the cloud and turns with it.
+function bakeView() {
+  if (T.vx === 1 && T.vy === 1) return;
+  const c = Math.cos(T.rot * RAD), s = Math.sin(T.rot * RAD);
+  // M = R^-1 V R
+  const m00 = c * c * T.vx + s * s * T.vy, m01 = c * s * (T.vy - T.vx);
+  const m11 = s * s * T.vx + c * c * T.vy;
+  const [a, b, cc, d] = T.A;
+  T.A = [m00 * a + m01 * cc, m00 * b + m01 * d, m01 * a + m11 * cc, m01 * b + m11 * d];
+  T.vx = 1; T.vy = 1;
 }
 function applyAll() { for (const d of sites) { const p = xf(d); d.X = p[0]; d.Y = p[1]; } }
 
@@ -412,12 +441,16 @@ function table() {
 d3.select("details").on("toggle", function () { if (this.open) table(); });
 
 // ---- transform controls ------------------------------------------------
-const NUM = ["rot", "sx", "sy", "tx", "ty"];
+const NUM = ["rot", "sx", "sy", "vx", "vy", "tx", "ty"];
+const SCALES = ["sx", "sy", "vx", "vy"];
 function syncControls() {
   for (const k of NUM) {
     d3.select("#" + k).property("value", T[k]);
-    d3.select("#" + k + "N").property("value", +T[k].toFixed(k === "sx" || k === "sy" ? 3 : 1));
+    d3.select("#" + k + "N").property("value", +T[k].toFixed(SCALES.includes(k) ? 3 : 1));
   }
+  const skewed = T.A.some((v, i) => Math.abs(v - [1, 0, 0, 1][i]) > 1e-9);
+  d3.select("#shapeNote").text(skewed ? "A view stretch is currently locked in." : "");
+  d3.select("#resetShape").property("disabled", !skewed);
   for (const k of ["flip", "latc", "lock"]) d3.select("#" + k).property("checked", T[k]);
   d3.select("#params").property("value", JSON.stringify(T, null, 1));
 }
@@ -439,7 +472,8 @@ for (const k of NUM) {
   const handler = function () {
     const v = +this.value; if (!isFinite(v)) return;
     if (k === "sx" || k === "sy") setScale(k, v);
-    else if (k === "rot") T.rot = wrapDeg(v);
+    else if (k === "vx" || k === "vy") T[k] = Math.max(0.01, v);
+    else if (k === "rot") { bakeView(); T.rot = wrapDeg(v); }
     else T[k] = v;
     changed();
   };
@@ -451,10 +485,12 @@ d3.select("#showMap").on("change", render);
 d3.select("#showTowns").on("change", render);
 d3.select("#ptAlpha").on("input", render);
 d3.select("#resetT").on("click", () => { T = { ...DEFAULT_T }; changed(); });
+d3.select("#resetShape").on("click", () => { T.A = [1, 0, 0, 1]; changed(); });
 
 // Rotate so the cloud's principal axis points north (keeps scale/shift).
 d3.select("#align").on("click", () => {
-  const xs = sites.map(d => d.x * (T.latc ? LATK : 1) * (T.flip ? -1 : 1) * T.sx), ys = sites.map(d => d.y * T.sy);
+  bakeView();
+  const sh = sites.map(shaped), xs = sh.map(p => p[0]), ys = sh.map(p => p[1]);
   const mx = d3.mean(xs), my = d3.mean(ys);
   let sxx = 0, syy = 0, sxy = 0;
   xs.forEach((x, i) => { const a = x - mx, b = ys[i] - my; sxx += a * a; syy += b * b; sxy += a * b; });
@@ -503,6 +539,7 @@ svg.on("pointerdown.pts", e => {
   if (mode !== "points" || e.button) return;
   const x = zt.rescaleX(x0), y = zt.rescaleY(y0);
   const [px, py] = d3.pointer(e);
+  if (e.shiftKey) { bakeView(); changed(); }
   drag = { rotate: e.shiftKey, px, py, tx: T.tx, ty: T.ty, rot: T.rot,
            a0: Math.atan2(y.invert(py) - T.ty, x.invert(px) - T.tx) };
   e.preventDefault();

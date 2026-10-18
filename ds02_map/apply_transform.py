@@ -13,7 +13,8 @@ import pandas as pd
 HERE = Path(__file__).resolve().parent
 R_KM = 6371.0088
 
-T = {"rot": 0, "sx": 1, "sy": 1, "tx": 0, "ty": 0, "flip": False, "latc": True}
+T = {"rot": 0, "sx": 1, "sy": 1, "vx": 1, "vy": 1, "tx": 0, "ty": 0,
+     "A": [1, 0, 0, 1], "flip": False, "latc": True}
 T.update(json.loads(sys.argv[1]))
 out = Path(sys.argv[2]) if len(sys.argv) > 2 else HERE / "ds02_sites_fitted.csv"
 
@@ -23,12 +24,15 @@ lat0, lon0 = outline["lat0"], outline["lon0"]
 
 # Same steps, in the same order, as xf() in the page.
 latk = np.cos(np.radians(lat0)) / np.cos(np.radians(sites.LAT.mean()))
-# Scale in the cloud's own frame first, then rotate (rotation is rigid).
+# p' = V . R . A . S . p + t: fixed scale, locked-in view stretch, rotation,
+# live view scale (screen axes), shift.
 x = sites.X_KM * (latk if T["latc"] else 1) * (-1 if T["flip"] else 1) * T["sx"]
 y = sites.Y_KM * T["sy"]
+a, b, c_, d = T["A"]
+x, y = a * x + b * y, c_ * x + d * y
 c, s = np.cos(np.radians(T["rot"])), np.sin(np.radians(T["rot"]))
-fx = x * c - y * s + T["tx"]
-fy = x * s + y * c + T["ty"]
+fx = (x * c - y * s) * T["vx"] + T["tx"]
+fy = (x * s + y * c) * T["vy"] + T["ty"]
 
 sites["FIT_X_KM"] = fx.round(3)
 sites["FIT_Y_KM"] = fy.round(3)
