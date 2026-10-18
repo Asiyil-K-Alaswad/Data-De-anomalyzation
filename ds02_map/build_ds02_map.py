@@ -44,6 +44,7 @@ sites = cells.groupby("ANONYMIZED_SITECODE").agg(
     CELLS2G=("CELLS2G", "max"), CELLS4G=("CELLS4G", "max"), CELLS5G=("CELLS5G", "max"),
     N_CELLROWS=("ANOM_CELLCODE", "size"),
     N_LOCATIONS=("LAT", "nunique"),
+    LAC_TACS=("LAC_TAC", lambda v: ";".join(str(int(c)) for c in sorted(set(v)))),
 ).reset_index()
 
 # Local equirectangular projection around the centroid: accurate for relative
@@ -92,6 +93,16 @@ html = (html.replace("__DATA__", json.dumps(rows))
             .replace("__META__", json.dumps(meta))
             .replace("__OUTLINE__", (OUT / "qatar_outline.json").read_text()))
 (OUT / "ds02_site_map.html").write_text(html)
+
+# ---- LAC/TAC region map (regions from build_lac_regions.py) ---------------
+lac_rows = [r + [[int(c) for c in codes.split(";")]]
+            for r, codes in zip(rows, sites.LAC_TACS)]
+html = (OUT / "ds02_lac_map.template.html").read_text()
+html = (html.replace("__DATA__", json.dumps(lac_rows))
+            .replace("__META__", json.dumps(meta))
+            .replace("__OUTLINE__", (OUT / "qatar_outline.json").read_text())
+            .replace("__REGIONS__", (OUT / "lac_regions.json").read_text()))
+(OUT / "ds02_lac_map.html").write_text(html)
 
 print(sites[["X_KM", "Y_KM", "NN_KM"]].describe().round(2))
 print(sites.SITETYPE.value_counts(), (sites.N_LOCATIONS > 1).sum(), "sites with >1 location")
