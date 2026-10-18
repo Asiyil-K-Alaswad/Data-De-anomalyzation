@@ -1630,7 +1630,7 @@
   "far_max_rel_overestimate": 0.11972962925120209,
   "far_min_rel": -2.05536821658478e-16
  },
- "objective_eval_us": 243.5898780822754,
- "runtime_s": 328.39477920532227,
+ "objective_eval_us": 303.42817306518555,
+ "runtime_s": 206.35620975494385,
  "notes": "Independent re-implementation. Objective L = sum_g w_g E_g + 0.2 G + 1.0 Land + 1.0 Bnd with w_g = sqrt(n_g)/sum sqrt(n_h); quantiles use numpy linear interpolation; sigma is population SD (computed analytically from M because u is exactly whitened); Bnd = mean over sites of (excess_x^2 + excess_y^2). Land distance from a 0.25 km bilinear raster (60 km margin; beyond it clamp + Euclidean offset) of the Natural Earth 1:10m Qatar ring (GADM unavailable); that coastline lacks reclaimed land (The Pearl / West Bay), so 39 of the off-land sites are within 1.5 km of the coast (n_off_land_1km counts those beyond a 1 km buffer). Opposite-orientation median start = nearest matrix with flipped det (smaller singular value negated) with t refit by LS. Unconstrained NM/Powell cross det(B)=0 freely, so each orientation was also searched separately in an orientation-preserving QR parameterisation M = Rot(phi)[[e^a, b],[0, s e^c]]; in det>0 the infimum is a rank-1 collapse (orientation.det_pos_degenerate_infimum) and the best non-degenerate det>0 local minimum is orientation.det_pos. L-BFGS-B uses finite-difference gradients on a piecewise-smooth objective and rarely moved; Powell + a short NM chain gave the final polish. LOO drops w_g E_g without renormalising the other weights; loo_warm_vs_leakfree_km = distance between held-out group fitted medians of the best warm-start and best leak-free solutions."
 }
