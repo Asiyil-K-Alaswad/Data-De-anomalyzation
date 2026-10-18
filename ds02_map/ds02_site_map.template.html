@@ -14,9 +14,14 @@
   --text-muted: #7a7974;
   --grid: #e4e3df;
   --border: #d6d5cf;
+  --sea: #eef3f8;
+  --land: #ebe8df;
+  --land-qatar: #e2dccb;
+  --land-edge: #a39c86;
   --series-1: #2a78d6;
   --series-2: #eb6834;
   --series-3: #1baf7a;
+  --accent: #2a78d6;
   --focus: #0b0b0b;
 }
 @media (prefers-color-scheme: dark) {
@@ -29,9 +34,14 @@
     --text-muted: #8f8e86;
     --grid: #2c2c2a;
     --border: #3a3a37;
+    --sea: #16191d;
+    --land: #262522;
+    --land-qatar: #34322c;
+    --land-edge: #7d7766;
     --series-1: #3987e5;
     --series-2: #d95926;
     --series-3: #199e70;
+    --accent: #3987e5;
     --focus: #f0efec;
   }
 }
@@ -44,9 +54,14 @@
   --text-muted: #8f8e86;
   --grid: #2c2c2a;
   --border: #3a3a37;
+  --sea: #16191d;
+  --land: #262522;
+  --land-qatar: #34322c;
+  --land-edge: #7d7766;
   --series-1: #3987e5;
   --series-2: #d95926;
   --series-3: #199e70;
+  --accent: #3987e5;
   --focus: #f0efec;
 }
 * { box-sizing: border-box; }
@@ -54,10 +69,11 @@ body {
   margin: 0; background: var(--surface-0); color: var(--text-primary);
   font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif;
 }
-main { max-width: 1200px; margin: 0 auto; padding: 24px 16px 40px; }
+main { max-width: 1320px; margin: 0 auto; padding: 24px 16px 40px; }
 h1 { font-size: 22px; margin: 0 0 4px; font-weight: 650; }
-.sub { color: var(--text-secondary); margin: 0 0 16px; max-width: 75ch; }
-.controls { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; margin-bottom: 12px; }
+h2 { font-size: 13px; margin: 0 0 8px; font-weight: 650; color: var(--text-secondary); text-transform: uppercase; letter-spacing: .04em; }
+.sub { color: var(--text-secondary); margin: 0 0 12px; max-width: 80ch; }
+.controls { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; margin-bottom: 12px; }
 .chip {
   display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px;
   border: 1px solid var(--border); border-radius: 999px; background: var(--surface-1);
@@ -66,31 +82,54 @@ h1 { font-size: 22px; margin: 0 0 4px; font-weight: 650; }
 .chip[aria-pressed="false"] { color: var(--text-muted); }
 .chip[aria-pressed="false"] .sw { opacity: .25; }
 .sw { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
-input[type="search"] {
-  font: inherit; padding: 5px 10px; border: 1px solid var(--border); border-radius: 8px;
-  background: var(--surface-1); color: var(--text-primary); min-width: 220px;
+input[type="search"], input[type="number"] {
+  font: inherit; padding: 4px 8px; border: 1px solid var(--border); border-radius: 8px;
+  background: var(--surface-1); color: var(--text-primary);
 }
+input[type="search"] { min-width: 200px; }
+input[type="number"] { width: 76px; text-align: right; font-variant-numeric: tabular-nums; }
 button.plain {
   font: inherit; padding: 5px 10px; border: 1px solid var(--border); border-radius: 8px;
   background: var(--surface-1); color: var(--text-primary); cursor: pointer;
 }
+button.plain:hover { border-color: var(--text-muted); }
+.seg { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+.seg button { font: inherit; padding: 5px 10px; border: 0; background: var(--surface-1); color: var(--text-secondary); cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--accent); color: #fff; }
+.layout { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 12px; align-items: start; }
+@media (max-width: 860px) { .layout { grid-template-columns: 1fr; } }
 .card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; position: relative; overflow: hidden; }
-#map { display: block; width: 100%; height: min(78vh, 900px); touch-action: none; cursor: grab; }
-#map:active { cursor: grabbing; }
+.panel { padding: 14px; }
+.panel + .panel { border-top: 1px solid var(--border); }
+#map { user-select: none; -webkit-user-select: none; display: block; width: 100%; height: min(80vh, 920px); touch-action: none; cursor: grab; background: var(--sea); }
+#map.points-mode { cursor: move; }
 .grid line { stroke: var(--grid); }
 .axis text { fill: var(--text-muted); font-size: 11px; }
-.site { stroke: var(--surface-1); stroke-width: 1.5px; }
+.land { fill: var(--land); stroke: none; }
+.qatar { fill: var(--land-qatar); stroke: var(--land-edge); stroke-width: 1.5px; stroke-linejoin: round; }
+.town circle { fill: var(--text-secondary); }
+.town text { fill: var(--text-secondary); font-size: 11px; paint-order: stroke; stroke: var(--surface-1); stroke-width: 3px; }
+.site { stroke: var(--surface-1); stroke-width: 1px; }
 .site.hl { stroke: var(--focus); stroke-width: 2px; }
+.pivot { fill: none; stroke: var(--text-primary); stroke-width: 1.5px; }
 .scalebar line { stroke: var(--text-secondary); stroke-width: 2px; }
 .scalebar text { fill: var(--text-secondary); font-size: 12px; }
 #tip {
   position: absolute; pointer-events: none; background: var(--surface-1);
   border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; font-size: 12px;
-  box-shadow: 0 4px 16px rgba(0,0,0,.12); display: none; min-width: 190px; z-index: 2;
+  box-shadow: 0 4px 16px rgba(0,0,0,.12); display: none; min-width: 210px; z-index: 2;
 }
 #tip b { display: block; font-size: 13px; margin-bottom: 4px; }
 #tip .row { display: flex; justify-content: space-between; gap: 12px; color: var(--text-secondary); }
 #tip .row span:last-child { color: var(--text-primary); font-variant-numeric: tabular-nums; }
+.ctl { display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; align-items: center; margin-bottom: 10px; }
+.ctl label { color: var(--text-secondary); font-size: 13px; }
+.ctl input[type="range"] { grid-column: 1 / -1; width: 100%; accent-color: var(--accent); }
+.check { display: flex; gap: 8px; align-items: center; margin: 6px 0; color: var(--text-secondary); font-size: 13px; }
+.check input { accent-color: var(--accent); }
+.btnrow { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.note { color: var(--text-muted); font-size: 12px; margin: 6px 0 0; }
+textarea { width: 100%; font: 12px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace; background: var(--surface-0); color: var(--text-primary); border: 1px solid var(--border); border-radius: 8px; padding: 6px; resize: vertical; }
 .hint { color: var(--text-muted); font-size: 12px; margin-top: 8px; }
 .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin: 16px 0 0; }
 .stat { background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; }
@@ -107,35 +146,82 @@ th { position: sticky; top: 0; background: var(--surface-1); color: var(--text-s
 </head>
 <body>
 <main>
-  <h1>DS02 site locations, by relative distance</h1>
-  <p class="sub">The DS02 coordinates are anonymized, so this map is drawn in kilometres from the network's centre point. Only the distances between sites mean anything; where the sites sit on Earth does not. Marker size shows the site's total cell count (2G+4G+5G).</p>
-  <p class="sub">Kilometres are computed at the anonymized latitude (about 50&deg;S). If the anonymization only shifted the coordinates in degrees, the north&ndash;south distances are exact, but the east&ndash;west ones scale with the cosine of the true latitude, which isn't known.</p>
+  <h1>DS02 site locations, fitted to Qatar</h1>
+  <p class="sub">The sites are plotted in kilometres from their own centre point, over an outline of Qatar drawn to the same km scale. Rotate, stretch, mirror and move the point cloud until it roughly matches the coastline. The map itself never moves; only the points do. Marker size shows each site's total cell count (2G+4G+5G).</p>
 
-  <div class="controls" role="toolbar" aria-label="Filters">
+  <div class="controls" role="toolbar" aria-label="Filters and mode">
     <span id="chips"></span>
+    <span class="seg" role="group" aria-label="Dragging moves">
+      <button id="modeView" aria-pressed="true">Drag: pan view</button>
+      <button id="modePts" aria-pressed="false">Drag: move points</button>
+    </span>
     <input type="search" id="q" placeholder="Find site code…" aria-label="Find site code">
-    <button class="plain" id="reset">Reset view</button>
+    <button class="plain" id="resetView">Reset view</button>
   </div>
 
-  <div class="card">
-    <svg id="map" role="img" aria-label="Scatter map of DS02 sites in kilometres relative to the centroid"></svg>
-    <div id="tip"></div>
+  <div class="layout">
+    <div>
+      <div class="card">
+        <svg id="map" role="img" aria-label="DS02 sites overlaid on an outline of Qatar, in kilometres"></svg>
+        <div id="tip"></div>
+      </div>
+      <div class="hint">Scroll or pinch to zoom. In <b>move points</b> mode, drag to move the points and Shift+drag to rotate them around the ring marker; in <b>pan view</b> mode, dragging pans the whole view. Hover a site for its details and estimated position.</div>
+    </div>
+
+    <div class="card" aria-label="Point transform">
+      <div class="panel">
+        <h2>Transform points</h2>
+        <div class="ctl"><label for="rot">Rotation (°)</label><input type="number" id="rotN" step="0.5" aria-label="Rotation degrees"><input type="range" id="rot" min="-180" max="180" step="0.5"></div>
+        <div class="ctl"><label for="sx">Horizontal scale (×)</label><input type="number" id="sxN" step="0.01" aria-label="Horizontal scale"><input type="range" id="sx" min="0.1" max="3" step="0.01"></div>
+        <div class="ctl"><label for="sy">Vertical scale (×)</label><input type="number" id="syN" step="0.01" aria-label="Vertical scale"><input type="range" id="sy" min="0.1" max="3" step="0.01"></div>
+        <label class="check"><input type="checkbox" id="lock"> Lock aspect ratio (scale both together)</label>
+        <div class="ctl"><label for="tx">Shift east (km)</label><input type="number" id="txN" step="0.5" aria-label="Shift east km"><input type="range" id="tx" min="-200" max="200" step="0.5"></div>
+        <div class="ctl"><label for="ty">Shift north (km)</label><input type="number" id="tyN" step="0.5" aria-label="Shift north km"><input type="range" id="ty" min="-200" max="200" step="0.5"></div>
+        <label class="check"><input type="checkbox" id="flip"> Mirror east–west</label>
+        <label class="check"><input type="checkbox" id="latc"> <span>Rescale east–west distances to Qatar's latitude (×<span id="latk"></span>)</span></label>
+        <p class="note">The scales apply along the screen's horizontal and vertical axes, after rotation.</p>
+        <div class="btnrow">
+          <button class="plain" id="align">Align long axis north–south</button>
+          <button class="plain" id="resetT">Reset transform</button>
+        </div>
+      </div>
+      <div class="panel">
+        <h2>Background</h2>
+        <label class="check"><input type="checkbox" id="showMap" checked> Show Qatar and neighbouring coastlines</label>
+        <label class="check"><input type="checkbox" id="showTowns" checked> Show reference towns</label>
+        <div class="ctl"><label for="ptAlpha">Point opacity</label><span></span><input type="range" id="ptAlpha" min="0.1" max="1" step="0.05" value="0.75"></div>
+      </div>
+      <div class="panel">
+        <h2>Current transform</h2>
+        <textarea id="params" rows="6" readonly aria-label="Current transform parameters as JSON"></textarea>
+        <div class="btnrow"><button class="plain" id="copy">Copy</button><button class="plain" id="paste">Load from text…</button></div>
+        <p class="note">Settings are saved in this browser. Copy the JSON to keep or share a fit.</p>
+      </div>
+    </div>
   </div>
-  <div class="hint">Scroll or pinch to zoom, drag to pan. Hover a site for details. The scale bar adjusts as you zoom.</div>
 
   <div class="stats" id="stats"></div>
 
   <details>
-    <summary>Table view (sites visible in the current filter)</summary>
+    <summary>Table view (sites in the current filter, with estimated positions)</summary>
     <div class="tablewrap"><table id="tbl"><thead><tr>
-      <th>Site</th><th>X km</th><th>Y km</th><th>Type</th><th>LAC/TAC</th><th>2G</th><th>4G</th><th>5G</th><th>Nearest site km</th>
+      <th>Site</th><th>Est. lat</th><th>Est. lon</th><th>Type</th><th>LAC/TAC</th><th>2G</th><th>4G</th><th>5G</th><th>Nearest site km</th>
     </tr></thead><tbody></tbody></table></div>
   </details>
+  <p class="note">Coastlines: Natural Earth 1:10m. Positions are estimates under your current transform, not real coordinates.</p>
 </main>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
 <script>
 const RAW = __DATA__;
+const META = __META__;
+const OUTLINE = __OUTLINE__;
+const R_KM = 6371.0088, RAD = Math.PI / 180;
+// Site km were computed at the anonymized latitude; this factor re-expresses
+// east-west km as if the same degree offsets sat at Qatar's latitude.
+const LATK = Math.cos(OUTLINE.lat0 * RAD) / Math.cos(META.anonLat * RAD);
+d3.select("#latk").text(LATK.toFixed(2));
+
 const sites = RAW.map(r => ({
   id: r[0], x: r[1], y: r[2], type: r[3], lac: r[4],
   c2: r[5], c4: r[6], c5: r[7], total: r[8], nn: r[9]
@@ -145,12 +231,40 @@ const TYPES = [
   { key: "Indoor",  v: "--series-2" },
   { key: "Other",   v: "--series-3" },
 ];
-const active = new Set(TYPES.map(t => t.key));
-const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
-const colorOf = t => `var(${TYPES.find(d => d.key === t).v})`;
-const fmt = d3.format(",.2f");
+const TOWNS = [
+  ["Doha", 25.2854, 51.5310], ["Al Wakrah", 25.1715, 51.6034], ["Al Khor", 25.6839, 51.4968],
+  ["Ras Laffan", 25.9030, 51.5450], ["Madinat ash Shamal", 26.1293, 51.2009],
+  ["Dukhan", 25.4246, 50.7820], ["Mesaieed", 24.9909, 51.5493], ["Al Rayyan", 25.2919, 51.4244, "end"],
+];
+const kmOf = (lat, lon) => [
+  R_KM * (lon - OUTLINE.lon0) * RAD * Math.cos(OUTLINE.lat0 * RAD),
+  R_KM * (lat - OUTLINE.lat0) * RAD,
+];
+const latLonOf = (x, y) => [
+  OUTLINE.lat0 + y / R_KM / RAD,
+  OUTLINE.lon0 + x / (R_KM * Math.cos(OUTLINE.lat0 * RAD)) / RAD,
+];
 
-// chips
+// ---- transform state --------------------------------------------------
+const wrapDeg = a => +((((a + 180) % 360) + 360) % 360 - 180).toFixed(1);
+const DEFAULT_T = { rot: 0, sx: 1, sy: 1, tx: 0, ty: 0, flip: false, latc: true, lock: false };
+let T = { ...DEFAULT_T };
+try { const s = JSON.parse(localStorage.getItem("ds02-qatar-fit")); if (s) T = { ...DEFAULT_T, ...s }; } catch (e) {}
+
+// site (km about its own centroid) -> Qatar km frame
+function xf(d) {
+  let x = d.x * (T.latc ? LATK : 1) * (T.flip ? -1 : 1), y = d.y;
+  const c = Math.cos(T.rot * RAD), s = Math.sin(T.rot * RAD);
+  const xr = x * c - y * s, yr = x * s + y * c;
+  return [xr * T.sx + T.tx, yr * T.sy + T.ty];
+}
+function applyAll() { for (const d of sites) { const p = xf(d); d.X = p[0]; d.Y = p[1]; } }
+
+const active = new Set(TYPES.map(t => t.key));
+const colorOf = t => `var(${TYPES.find(d => d.key === t).v})`;
+const fmt = d3.format(",.2f"), fmt4 = d3.format(".4f");
+
+// ---- chips --------------------------------------------------------------
 const chips = d3.select("#chips");
 TYPES.forEach(t => {
   const n = sites.filter(s => s.type === t.key).length;
@@ -164,37 +278,40 @@ TYPES.forEach(t => {
   chips.append("span").text(" ");
 });
 
+// ---- scene ----------------------------------------------------------------
 const svg = d3.select("#map");
 const gGrid = svg.append("g").attr("class", "grid");
+const gLand = svg.append("g");
 const gAxisX = svg.append("g").attr("class", "axis");
 const gAxisY = svg.append("g").attr("class", "axis");
 const gPts = svg.append("g");
+const gTowns = svg.append("g");
+const pivot = svg.append("circle").attr("class", "pivot").attr("r", 7);
 const gScale = svg.append("g").attr("class", "scalebar");
 const tip = d3.select("#tip");
 
-const xExt = d3.extent(sites, d => d.x), yExt = d3.extent(sites, d => d.y);
-const rScale = d3.scaleSqrt().domain([0, d3.max(sites, d => d.total)]).range([2.5, 9]);
-let W, H, x0, y0, zt = d3.zoomIdentity;
+const qatarRing = OUTLINE.shapes.find(s => s.name === "Qatar").rings.flat();
+const rScale = d3.scaleSqrt().domain([0, d3.max(sites, d => d.total)]).range([2, 7]);
+let W, H, x0, y0, zt = d3.zoomIdentity, pts;
 
 function layout() {
   const node = svg.node();
   W = node.clientWidth; H = node.clientHeight;
-  const pad = 36;
-  // Equal km-per-pixel on both axes so distances are true in every direction.
-  const kmW = xExt[1] - xExt[0], kmH = yExt[1] - yExt[0];
-  const k = Math.min((W - 2 * pad) / kmW, (H - 2 * pad) / kmH);
-  const cx = (xExt[0] + xExt[1]) / 2, cy = (yExt[0] + yExt[1]) / 2;
+  // Frame Qatar with margin; equal km-per-pixel on both axes.
+  const xs = d3.extent(qatarRing, p => p[0]), ys = d3.extent(qatarRing, p => p[1]);
+  const kmW = (xs[1] - xs[0]) * 1.6, kmH = (ys[1] - ys[0]) * 1.25;
+  const k = Math.min(W / kmW, H / kmH);
+  const cx = (xs[0] + xs[1]) / 2, cy = (ys[0] + ys[1]) / 2;
   x0 = d3.scaleLinear().domain([cx - W / 2 / k, cx + W / 2 / k]).range([0, W]);
   y0 = d3.scaleLinear().domain([cy - H / 2 / k, cy + H / 2 / k]).range([H, 0]);
 }
 
-let pts;
 function update() {
   const vis = sites.filter(s => active.has(s.type));
   pts = gPts.selectAll("circle").data(vis, d => d.id);
   pts.exit().remove();
   pts = pts.enter().append("circle").attr("class", "site")
-      .attr("fill", d => colorOf(d.type)).attr("fill-opacity", 0.8)
+      .attr("fill", d => colorOf(d.type))
       .on("pointerenter", (e, d) => showTip(e, d))
       .on("pointermove", (e, d) => showTip(e, d))
       .on("pointerleave", hideTip)
@@ -202,30 +319,47 @@ function update() {
   pts.sort((a, b) => b.total - a.total);
   render();
   stats(vis);
-  table(vis);
+  tableDirty = true; if (document.querySelector("details").open) table();
 }
 
 function render() {
   const x = zt.rescaleX(x0), y = zt.rescaleY(y0);
-  const rk = Math.sqrt(zt.k);
-  pts.attr("cx", d => x(d.x)).attr("cy", d => y(d.y)).attr("r", d => rScale(d.total) * Math.min(rk, 1.8));
+  const line = d3.line().x(p => x(p[0])).y(p => y(p[1]));
+  const showMap = d3.select("#showMap").property("checked");
+  gLand.style("display", showMap ? null : "none");
+  gLand.selectAll("path").data(OUTLINE.shapes).join("path")
+    .attr("class", d => d.name === "Qatar" ? "qatar" : "land")
+    .attr("d", d => d.rings.map(r => line(r) + "Z").join(""));
+  gLand.selectAll("path.qatar").raise();
+
+  const rk = Math.min(Math.sqrt(zt.k), 1.8);
+  pts.attr("cx", d => x(d.X)).attr("cy", d => y(d.Y)).attr("r", d => rScale(d.total) * rk)
+     .attr("fill-opacity", +d3.select("#ptAlpha").property("value"));
+  pivot.attr("cx", x(T.tx)).attr("cy", y(T.ty))
+       .style("display", svg.classed("points-mode") ? null : "none");
+
+  gTowns.style("display", d3.select("#showTowns").property("checked") ? null : "none");
+  const tw = gTowns.selectAll("g.town").data(TOWNS).join(enter => {
+    const g = enter.append("g").attr("class", "town");
+    g.append("circle").attr("r", 3);
+    g.append("text").attr("x", d => d[3] ? -6 : 6).attr("y", -5)
+      .attr("text-anchor", d => d[3] || "start").text(d => d[0]);
+    return g;
+  });
+  tw.attr("transform", d => { const k = kmOf(d[1], d[2]); return `translate(${x(k[0])},${y(k[1])})`; });
 
   const xt = x.ticks(8), yt = y.ticks(8);
   gGrid.selectAll("line.v").data(xt).join("line").attr("class", "v")
     .attr("x1", d => x(d)).attr("x2", d => x(d)).attr("y1", 0).attr("y2", H);
   gGrid.selectAll("line.h").data(yt).join("line").attr("class", "h")
     .attr("y1", d => y(d)).attr("y2", d => y(d)).attr("x1", 0).attr("x2", W);
-  gAxisX.selectAll("text").data(xt).join("text")
-    .attr("x", d => x(d) + 3).attr("y", H - 6).text(d => `${d} km`);
-  gAxisY.selectAll("text").data(yt).join("text")
-    .attr("x", 6).attr("y", d => y(d) - 3).text(d => `${d} km`);
+  gAxisX.selectAll("text").data(xt).join("text").attr("x", d => x(d) + 3).attr("y", H - 6).text(d => `${d} km`);
+  gAxisY.selectAll("text").data(yt).join("text").attr("x", 6).attr("y", d => y(d) - 3).text(d => `${d} km`);
 
-  // scale bar: largest "nice" length that fits in ~140px
   const kmPerPx = (x.domain()[1] - x.domain()[0]) / W;
   const target = 140 * kmPerPx;
   const nice = [0.1,0.2,0.5,1,2,5,10,20,50,100].filter(v => v <= target).pop() || 0.1;
-  const px = nice / kmPerPx;
-  const sx = W - px - 24, sy = 28;
+  const px = nice / kmPerPx, sx = W - px - 24, sy = 28;
   gScale.selectAll("*").remove();
   gScale.append("line").attr("x1", sx).attr("x2", sx + px).attr("y1", sy).attr("y2", sy);
   gScale.append("line").attr("x1", sx).attr("x2", sx).attr("y1", sy - 5).attr("y2", sy + 5);
@@ -236,11 +370,12 @@ function render() {
 
 function showTip(e, d) {
   const box = svg.node().getBoundingClientRect();
+  const ll = latLonOf(d.X, d.Y);
   tip.style("display", "block").html(`
     <b>${d.id}</b>
     <div class="row"><span>Type</span><span>${d.type}</span></div>
-    <div class="row"><span>Position</span><span>${fmt(d.x)} E, ${fmt(d.y)} N km</span></div>
-    <div class="row"><span>Nearest site</span><span>${fmt(d.nn)} km</span></div>
+    <div class="row"><span>Est. position</span><span>${fmt4(ll[0])}°N, ${fmt4(ll[1])}°E</span></div>
+    <div class="row"><span>Nearest site (original)</span><span>${fmt(d.nn)} km</span></div>
     <div class="row"><span>LAC/TAC</span><span>${d.lac}</span></div>
     <div class="row"><span>Cells 2G/4G/5G</span><span>${d.c2} / ${d.c4} / ${d.c5}</span></div>`);
   const tw = tip.node().offsetWidth, th = tip.node().offsetHeight;
@@ -253,40 +388,156 @@ function showTip(e, d) {
 function hideTip(e) { tip.style("display", "none"); d3.select(e.currentTarget).classed("hl", false); }
 
 function stats(vis) {
-  const nn = vis.map(d => d.nn).sort(d3.ascending);
+  const xe = d3.extent(vis, d => d.X), ye = d3.extent(vis, d => d.Y);
+  const inside = vis.filter(d => d3.polygonContains(qatarRing, [d.X, d.Y])).length;
   const items = [
     [vis.length.toLocaleString(), "sites shown"],
-    [`${fmt(xExt[1] - xExt[0])} × ${fmt(yExt[1] - yExt[0])} km`, "network extent (E–W × N–S)"],
-    [`${fmt(d3.median(nn) || 0)} km`, "median distance to nearest site"],
-    [`${fmt(d3.quantile(nn, 0.9) || 0)} km`, "90th percentile nearest-site distance"],
+    [vis.length ? `${(100 * inside / vis.length).toFixed(1)}%` : "–", "of shown sites fall on Qatar's land"],
+    [vis.length ? `${fmt(xe[1] - xe[0])} × ${fmt(ye[1] - ye[0])} km` : "–", "fitted extent (E–W × N–S)"],
+    ["87 × 178 km", "Qatar's extent (E–W × N–S)"],
   ];
   d3.select("#stats").selectAll(".stat").data(items).join("div").attr("class", "stat")
     .html(d => `<div class="v">${d[0]}</div><div class="l">${d[1]}</div>`);
 }
 
-function table(vis) {
-  const rows = vis.slice().sort((a, b) => d3.ascending(a.id, b.id));
+let tableDirty = true;
+function table() {
+  if (!tableDirty) return; tableDirty = false;
+  const rows = sites.filter(s => active.has(s.type)).sort((a, b) => d3.ascending(a.id, b.id));
   d3.select("#tbl tbody").selectAll("tr").data(rows, d => d.id).join("tr")
-    .html(d => `<td>${d.id}</td><td>${fmt(d.x)}</td><td>${fmt(d.y)}</td><td>${d.type}</td><td>${d.lac}</td><td>${d.c2}</td><td>${d.c4}</td><td>${d.c5}</td><td>${fmt(d.nn)}</td>`);
+    .html(d => { const ll = latLonOf(d.X, d.Y);
+      return `<td>${d.id}</td><td>${fmt4(ll[0])}</td><td>${fmt4(ll[1])}</td><td>${d.type}</td><td>${d.lac}</td><td>${d.c2}</td><td>${d.c4}</td><td>${d.c5}</td><td>${fmt(d.nn)}</td>`; });
 }
+d3.select("details").on("toggle", function () { if (this.open) table(); });
 
-const zoom = d3.zoom().scaleExtent([0.5, 400]).on("zoom", e => { zt = e.transform; render(); });
+// ---- transform controls ------------------------------------------------
+const NUM = ["rot", "sx", "sy", "tx", "ty"];
+function syncControls() {
+  for (const k of NUM) {
+    d3.select("#" + k).property("value", T[k]);
+    d3.select("#" + k + "N").property("value", +T[k].toFixed(k === "sx" || k === "sy" ? 3 : 1));
+  }
+  for (const k of ["flip", "latc", "lock"]) d3.select("#" + k).property("checked", T[k]);
+  d3.select("#params").property("value", JSON.stringify(T, null, 1));
+}
+let raf = 0;
+function changed() {
+  try { localStorage.setItem("ds02-qatar-fit", JSON.stringify(T)); } catch (e) {}
+  syncControls();
+  cancelAnimationFrame(raf);
+  raf = requestAnimationFrame(() => {
+    applyAll(); render(); stats(sites.filter(s => active.has(s.type)));
+    tableDirty = true; if (document.querySelector("details").open) table();
+  });
+}
+function setScale(k, v) {
+  v = Math.max(0.01, v);
+  if (T.lock) { const r = v / T[k]; T.sx *= r; T.sy *= r; } else T[k] = v;
+}
+for (const k of NUM) {
+  const handler = function () {
+    const v = +this.value; if (!isFinite(v)) return;
+    if (k === "sx" || k === "sy") setScale(k, v);
+    else if (k === "rot") T.rot = wrapDeg(v);
+    else T[k] = v;
+    changed();
+  };
+  d3.select("#" + k).on("input", handler);
+  d3.select("#" + k + "N").on("change", handler);
+}
+for (const k of ["flip", "latc", "lock"]) d3.select("#" + k).on("change", function () { T[k] = this.checked; changed(); });
+d3.select("#showMap").on("change", render);
+d3.select("#showTowns").on("change", render);
+d3.select("#ptAlpha").on("input", render);
+d3.select("#resetT").on("click", () => { T = { ...DEFAULT_T }; changed(); });
+
+// Rotate so the cloud's principal axis points north (keeps scale/shift).
+d3.select("#align").on("click", () => {
+  const xs = sites.map(d => d.x * (T.latc ? LATK : 1) * (T.flip ? -1 : 1)), ys = sites.map(d => d.y);
+  const mx = d3.mean(xs), my = d3.mean(ys);
+  let sxx = 0, syy = 0, sxy = 0;
+  xs.forEach((x, i) => { const a = x - mx, b = ys[i] - my; sxx += a * a; syy += b * b; sxy += a * b; });
+  const axis = 0.5 * Math.atan2(2 * sxy, sxx - syy) / RAD;   // angle of long axis from east
+  T.rot = wrapDeg(90 - axis);
+  changed();
+});
+
+d3.select("#copy").on("click", async () => {
+  const ta = d3.select("#params").node();
+  try { await navigator.clipboard.writeText(ta.value); } catch (e) { ta.select(); document.execCommand("copy"); }
+});
+d3.select("#paste").on("click", () => {
+  const ta = d3.select("#params");
+  if (ta.property("readOnly")) {
+    ta.property("readOnly", false).property("value", "").node().focus();
+    d3.select("#paste").text("Apply");
+  } else {
+    try { T = { ...DEFAULT_T, ...JSON.parse(ta.property("value")) }; } catch (e) {}
+    ta.property("readOnly", true);
+    d3.select("#paste").text("Load from text…");
+    changed();
+  }
+});
+
+// ---- mode, zoom, point dragging -------------------------------------------
+let mode = "view";
+function setMode(m) {
+  mode = m;
+  d3.select("#modeView").attr("aria-pressed", m === "view");
+  d3.select("#modePts").attr("aria-pressed", m === "points");
+  svg.classed("points-mode", m === "points");
+  render();
+}
+d3.select("#modeView").on("click", () => setMode("view"));
+d3.select("#modePts").on("click", () => setMode("points"));
+
+const zoom = d3.zoom().scaleExtent([0.3, 400])
+  // In points mode, drags go to the point mover; wheel/pinch still zoom.
+  .filter(e => (mode === "view" || e.type === "wheel" || e.touches?.length > 1) && !e.button)
+  .on("zoom", e => { zt = e.transform; render(); });
 svg.call(zoom);
-d3.select("#reset").on("click", () => svg.transition().duration(400).call(zoom.transform, d3.zoomIdentity));
 
+let drag = null;
+svg.on("pointerdown.pts", e => {
+  if (mode !== "points" || e.button) return;
+  const x = zt.rescaleX(x0), y = zt.rescaleY(y0);
+  const [px, py] = d3.pointer(e);
+  drag = { rotate: e.shiftKey, px, py, tx: T.tx, ty: T.ty, rot: T.rot,
+           a0: Math.atan2(y.invert(py) - T.ty, x.invert(px) - T.tx) };
+  e.preventDefault();
+  svg.node().setPointerCapture(e.pointerId);
+});
+svg.on("pointermove.pts", e => {
+  if (!drag) return;
+  const x = zt.rescaleX(x0), y = zt.rescaleY(y0);
+  const [px, py] = d3.pointer(e);
+  if (drag.rotate) {
+    const a = Math.atan2(y.invert(py) - T.ty, x.invert(px) - T.tx);
+    T.rot = wrapDeg(drag.rot + (a - drag.a0) / RAD);
+  } else {
+    T.tx = +(drag.tx + x.invert(px) - x.invert(drag.px)).toFixed(2);
+    T.ty = +(drag.ty + y.invert(py) - y.invert(drag.py)).toFixed(2);
+  }
+  changed();
+});
+svg.on("pointerup.pts pointercancel.pts", () => { drag = null; });
+
+d3.select("#resetView").on("click", () => svg.transition().duration(400).call(zoom.transform, d3.zoomIdentity));
 d3.select("#q").on("change", function () {
   const q = this.value.trim().toUpperCase();
   const s = sites.find(d => d.id.toUpperCase().includes(q));
   if (!q || !s) return;
   if (!active.has(s.type)) { active.add(s.type); chips.selectAll("button").attr("aria-pressed", (_, i) => active.has(TYPES[i].key)); update(); }
-  const k = 40;
-  const t = d3.zoomIdentity.translate(W / 2 - k * x0(s.x), H / 2 - k * y0(s.y)).scale(k);
+  const k = 30;
+  const t = d3.zoomIdentity.translate(W / 2 - k * x0(s.X), H / 2 - k * y0(s.Y)).scale(k);
   svg.transition().duration(600).call(zoom.transform, t);
   pts.filter(d => d.id === s.id).classed("hl", true).raise();
 });
 
 window.addEventListener("resize", () => { layout(); render(); });
 layout();
+applyAll();
+syncControls();
 update();
 </script>
 </body>

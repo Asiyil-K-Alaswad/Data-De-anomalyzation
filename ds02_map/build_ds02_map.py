@@ -87,7 +87,11 @@ cols = ["ANONYMIZED_SITECODE", "X_KM", "Y_KM", "SITETYPE", "LAC_TAC", "CELLS2G",
         "CELLS4G", "CELLS5G", "TOTAL_CELLS", "NN_KM"]
 rows = sites[cols].astype(object).values.tolist()
 html = (OUT / "ds02_site_map.template.html").read_text()
-(OUT / "ds02_site_map.html").write_text(html.replace("__DATA__", json.dumps(rows)))
+meta = {"anonLat": float(sites.LAT.mean())}
+html = (html.replace("__DATA__", json.dumps(rows))
+            .replace("__META__", json.dumps(meta))
+            .replace("__OUTLINE__", (OUT / "qatar_outline.json").read_text()))
+(OUT / "ds02_site_map.html").write_text(html)
 
 print(sites[["X_KM", "Y_KM", "NN_KM"]].describe().round(2))
 print(sites.SITETYPE.value_counts(), (sites.N_LOCATIONS > 1).sum(), "sites with >1 location")
