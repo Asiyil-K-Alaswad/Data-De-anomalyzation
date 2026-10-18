@@ -1,0 +1,293 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DS02 Site Map</title>
+<style>
+:root {
+  color-scheme: light;
+  --surface-0: #f4f3f0;
+  --surface-1: #fcfcfb;
+  --text-primary: #0b0b0b;
+  --text-secondary: #52514e;
+  --text-muted: #7a7974;
+  --grid: #e4e3df;
+  --border: #d6d5cf;
+  --series-1: #2a78d6;
+  --series-2: #eb6834;
+  --series-3: #1baf7a;
+  --focus: #0b0b0b;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --surface-0: #121211;
+    --surface-1: #1a1a19;
+    --text-primary: #f0efec;
+    --text-secondary: #c3c2b7;
+    --text-muted: #8f8e86;
+    --grid: #2c2c2a;
+    --border: #3a3a37;
+    --series-1: #3987e5;
+    --series-2: #d95926;
+    --series-3: #199e70;
+    --focus: #f0efec;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --surface-0: #121211;
+  --surface-1: #1a1a19;
+  --text-primary: #f0efec;
+  --text-secondary: #c3c2b7;
+  --text-muted: #8f8e86;
+  --grid: #2c2c2a;
+  --border: #3a3a37;
+  --series-1: #3987e5;
+  --series-2: #d95926;
+  --series-3: #199e70;
+  --focus: #f0efec;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--surface-0); color: var(--text-primary);
+  font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+main { max-width: 1200px; margin: 0 auto; padding: 24px 16px 40px; }
+h1 { font-size: 22px; margin: 0 0 4px; font-weight: 650; }
+.sub { color: var(--text-secondary); margin: 0 0 16px; max-width: 75ch; }
+.controls { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; margin-bottom: 12px; }
+.chip {
+  display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px;
+  border: 1px solid var(--border); border-radius: 999px; background: var(--surface-1);
+  color: var(--text-primary); cursor: pointer; font: inherit;
+}
+.chip[aria-pressed="false"] { color: var(--text-muted); }
+.chip[aria-pressed="false"] .sw { opacity: .25; }
+.sw { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+input[type="search"] {
+  font: inherit; padding: 5px 10px; border: 1px solid var(--border); border-radius: 8px;
+  background: var(--surface-1); color: var(--text-primary); min-width: 220px;
+}
+button.plain {
+  font: inherit; padding: 5px 10px; border: 1px solid var(--border); border-radius: 8px;
+  background: var(--surface-1); color: var(--text-primary); cursor: pointer;
+}
+.card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; position: relative; overflow: hidden; }
+#map { display: block; width: 100%; height: min(78vh, 900px); touch-action: none; cursor: grab; }
+#map:active { cursor: grabbing; }
+.grid line { stroke: var(--grid); }
+.axis text { fill: var(--text-muted); font-size: 11px; }
+.site { stroke: var(--surface-1); stroke-width: 1.5px; }
+.site.hl { stroke: var(--focus); stroke-width: 2px; }
+.scalebar line { stroke: var(--text-secondary); stroke-width: 2px; }
+.scalebar text { fill: var(--text-secondary); font-size: 12px; }
+#tip {
+  position: absolute; pointer-events: none; background: var(--surface-1);
+  border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; font-size: 12px;
+  box-shadow: 0 4px 16px rgba(0,0,0,.12); display: none; min-width: 190px; z-index: 2;
+}
+#tip b { display: block; font-size: 13px; margin-bottom: 4px; }
+#tip .row { display: flex; justify-content: space-between; gap: 12px; color: var(--text-secondary); }
+#tip .row span:last-child { color: var(--text-primary); font-variant-numeric: tabular-nums; }
+.hint { color: var(--text-muted); font-size: 12px; margin-top: 8px; }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin: 16px 0 0; }
+.stat { background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; }
+.stat .v { font-size: 22px; font-weight: 650; font-variant-numeric: tabular-nums; }
+.stat .l { color: var(--text-secondary); font-size: 12px; }
+details { margin-top: 16px; }
+summary { cursor: pointer; color: var(--text-secondary); }
+.tablewrap { max-height: 360px; overflow: auto; border: 1px solid var(--border); border-radius: 8px; margin-top: 8px; background: var(--surface-1); }
+table { border-collapse: collapse; width: 100%; font-size: 12px; font-variant-numeric: tabular-nums; }
+th, td { padding: 4px 8px; text-align: right; border-bottom: 1px solid var(--grid); white-space: nowrap; }
+th:first-child, td:first-child, th:nth-child(4), td:nth-child(4) { text-align: left; }
+th { position: sticky; top: 0; background: var(--surface-1); color: var(--text-secondary); font-weight: 600; }
+</style>
+</head>
+<body>
+<main>
+  <h1>DS02 site locations, by relative distance</h1>
+  <p class="sub">The DS02 coordinates are anonymized, so this map is drawn in kilometres from the network's centre point. Only the distances between sites mean anything; where the sites sit on Earth does not. Marker size shows the site's total cell count (2G+4G+5G).</p>
+  <p class="sub">Kilometres are computed at the anonymized latitude (about 50&deg;S). If the anonymization only shifted the coordinates in degrees, the north&ndash;south distances are exact, but the east&ndash;west ones scale with the cosine of the true latitude, which isn't known.</p>
+
+  <div class="controls" role="toolbar" aria-label="Filters">
+    <span id="chips"></span>
+    <input type="search" id="q" placeholder="Find site code…" aria-label="Find site code">
+    <button class="plain" id="reset">Reset view</button>
+  </div>
+
+  <div class="card">
+    <svg id="map" role="img" aria-label="Scatter map of DS02 sites in kilometres relative to the centroid"></svg>
+    <div id="tip"></div>
+  </div>
+  <div class="hint">Scroll or pinch to zoom, drag to pan. Hover a site for details. The scale bar adjusts as you zoom.</div>
+
+  <div class="stats" id="stats"></div>
+
+  <details>
+    <summary>Table view (sites visible in the current filter)</summary>
+    <div class="tablewrap"><table id="tbl"><thead><tr>
+      <th>Site</th><th>X km</th><th>Y km</th><th>Type</th><th>LAC/TAC</th><th>2G</th><th>4G</th><th>5G</th><th>Nearest site km</th>
+    </tr></thead><tbody></tbody></table></div>
+  </details>
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<script>
+const RAW = __DATA__;
+const sites = RAW.map(r => ({
+  id: r[0], x: r[1], y: r[2], type: r[3], lac: r[4],
+  c2: r[5], c4: r[6], c5: r[7], total: r[8], nn: r[9]
+}));
+const TYPES = [
+  { key: "Outdoor", v: "--series-1" },
+  { key: "Indoor",  v: "--series-2" },
+  { key: "Other",   v: "--series-3" },
+];
+const active = new Set(TYPES.map(t => t.key));
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const colorOf = t => `var(${TYPES.find(d => d.key === t).v})`;
+const fmt = d3.format(",.2f");
+
+// chips
+const chips = d3.select("#chips");
+TYPES.forEach(t => {
+  const n = sites.filter(s => s.type === t.key).length;
+  chips.append("button").attr("class", "chip").attr("aria-pressed", "true")
+    .html(`<span class="sw" style="background:var(${t.v})"></span>${t.key} <span style="color:var(--text-muted)">${n.toLocaleString()}</span>`)
+    .on("click", function () {
+      if (active.has(t.key)) active.delete(t.key); else active.add(t.key);
+      d3.select(this).attr("aria-pressed", active.has(t.key));
+      update();
+    });
+  chips.append("span").text(" ");
+});
+
+const svg = d3.select("#map");
+const gGrid = svg.append("g").attr("class", "grid");
+const gAxisX = svg.append("g").attr("class", "axis");
+const gAxisY = svg.append("g").attr("class", "axis");
+const gPts = svg.append("g");
+const gScale = svg.append("g").attr("class", "scalebar");
+const tip = d3.select("#tip");
+
+const xExt = d3.extent(sites, d => d.x), yExt = d3.extent(sites, d => d.y);
+const rScale = d3.scaleSqrt().domain([0, d3.max(sites, d => d.total)]).range([2.5, 9]);
+let W, H, x0, y0, zt = d3.zoomIdentity;
+
+function layout() {
+  const node = svg.node();
+  W = node.clientWidth; H = node.clientHeight;
+  const pad = 36;
+  // Equal km-per-pixel on both axes so distances are true in every direction.
+  const kmW = xExt[1] - xExt[0], kmH = yExt[1] - yExt[0];
+  const k = Math.min((W - 2 * pad) / kmW, (H - 2 * pad) / kmH);
+  const cx = (xExt[0] + xExt[1]) / 2, cy = (yExt[0] + yExt[1]) / 2;
+  x0 = d3.scaleLinear().domain([cx - W / 2 / k, cx + W / 2 / k]).range([0, W]);
+  y0 = d3.scaleLinear().domain([cy - H / 2 / k, cy + H / 2 / k]).range([H, 0]);
+}
+
+let pts;
+function update() {
+  const vis = sites.filter(s => active.has(s.type));
+  pts = gPts.selectAll("circle").data(vis, d => d.id);
+  pts.exit().remove();
+  pts = pts.enter().append("circle").attr("class", "site")
+      .attr("fill", d => colorOf(d.type)).attr("fill-opacity", 0.8)
+      .on("pointerenter", (e, d) => showTip(e, d))
+      .on("pointermove", (e, d) => showTip(e, d))
+      .on("pointerleave", hideTip)
+    .merge(pts);
+  pts.sort((a, b) => b.total - a.total);
+  render();
+  stats(vis);
+  table(vis);
+}
+
+function render() {
+  const x = zt.rescaleX(x0), y = zt.rescaleY(y0);
+  const rk = Math.sqrt(zt.k);
+  pts.attr("cx", d => x(d.x)).attr("cy", d => y(d.y)).attr("r", d => rScale(d.total) * Math.min(rk, 1.8));
+
+  const xt = x.ticks(8), yt = y.ticks(8);
+  gGrid.selectAll("line.v").data(xt).join("line").attr("class", "v")
+    .attr("x1", d => x(d)).attr("x2", d => x(d)).attr("y1", 0).attr("y2", H);
+  gGrid.selectAll("line.h").data(yt).join("line").attr("class", "h")
+    .attr("y1", d => y(d)).attr("y2", d => y(d)).attr("x1", 0).attr("x2", W);
+  gAxisX.selectAll("text").data(xt).join("text")
+    .attr("x", d => x(d) + 3).attr("y", H - 6).text(d => `${d} km`);
+  gAxisY.selectAll("text").data(yt).join("text")
+    .attr("x", 6).attr("y", d => y(d) - 3).text(d => `${d} km`);
+
+  // scale bar: largest "nice" length that fits in ~140px
+  const kmPerPx = (x.domain()[1] - x.domain()[0]) / W;
+  const target = 140 * kmPerPx;
+  const nice = [0.1,0.2,0.5,1,2,5,10,20,50,100].filter(v => v <= target).pop() || 0.1;
+  const px = nice / kmPerPx;
+  const sx = W - px - 24, sy = 28;
+  gScale.selectAll("*").remove();
+  gScale.append("line").attr("x1", sx).attr("x2", sx + px).attr("y1", sy).attr("y2", sy);
+  gScale.append("line").attr("x1", sx).attr("x2", sx).attr("y1", sy - 5).attr("y2", sy + 5);
+  gScale.append("line").attr("x1", sx + px).attr("x2", sx + px).attr("y1", sy - 5).attr("y2", sy + 5);
+  gScale.append("text").attr("x", sx + px / 2).attr("y", sy - 8).attr("text-anchor", "middle")
+    .text(nice < 1 ? `${nice * 1000} m` : `${nice} km`);
+}
+
+function showTip(e, d) {
+  const box = svg.node().getBoundingClientRect();
+  tip.style("display", "block").html(`
+    <b>${d.id}</b>
+    <div class="row"><span>Type</span><span>${d.type}</span></div>
+    <div class="row"><span>Position</span><span>${fmt(d.x)} E, ${fmt(d.y)} N km</span></div>
+    <div class="row"><span>Nearest site</span><span>${fmt(d.nn)} km</span></div>
+    <div class="row"><span>LAC/TAC</span><span>${d.lac}</span></div>
+    <div class="row"><span>Cells 2G/4G/5G</span><span>${d.c2} / ${d.c4} / ${d.c5}</span></div>`);
+  const tw = tip.node().offsetWidth, th = tip.node().offsetHeight;
+  let lx = e.clientX - box.left + 14, ly = e.clientY - box.top + 14;
+  if (lx + tw > box.width) lx = e.clientX - box.left - tw - 14;
+  if (ly + th > box.height) ly = e.clientY - box.top - th - 14;
+  tip.style("left", lx + "px").style("top", ly + "px");
+  d3.select(e.currentTarget).classed("hl", true).raise();
+}
+function hideTip(e) { tip.style("display", "none"); d3.select(e.currentTarget).classed("hl", false); }
+
+function stats(vis) {
+  const nn = vis.map(d => d.nn).sort(d3.ascending);
+  const items = [
+    [vis.length.toLocaleString(), "sites shown"],
+    [`${fmt(xExt[1] - xExt[0])} × ${fmt(yExt[1] - yExt[0])} km`, "network extent (E–W × N–S)"],
+    [`${fmt(d3.median(nn) || 0)} km`, "median distance to nearest site"],
+    [`${fmt(d3.quantile(nn, 0.9) || 0)} km`, "90th percentile nearest-site distance"],
+  ];
+  d3.select("#stats").selectAll(".stat").data(items).join("div").attr("class", "stat")
+    .html(d => `<div class="v">${d[0]}</div><div class="l">${d[1]}</div>`);
+}
+
+function table(vis) {
+  const rows = vis.slice().sort((a, b) => d3.ascending(a.id, b.id));
+  d3.select("#tbl tbody").selectAll("tr").data(rows, d => d.id).join("tr")
+    .html(d => `<td>${d.id}</td><td>${fmt(d.x)}</td><td>${fmt(d.y)}</td><td>${d.type}</td><td>${d.lac}</td><td>${d.c2}</td><td>${d.c4}</td><td>${d.c5}</td><td>${fmt(d.nn)}</td>`);
+}
+
+const zoom = d3.zoom().scaleExtent([0.5, 400]).on("zoom", e => { zt = e.transform; render(); });
+svg.call(zoom);
+d3.select("#reset").on("click", () => svg.transition().duration(400).call(zoom.transform, d3.zoomIdentity));
+
+d3.select("#q").on("change", function () {
+  const q = this.value.trim().toUpperCase();
+  const s = sites.find(d => d.id.toUpperCase().includes(q));
+  if (!q || !s) return;
+  if (!active.has(s.type)) { active.add(s.type); chips.selectAll("button").attr("aria-pressed", (_, i) => active.has(TYPES[i].key)); update(); }
+  const k = 40;
+  const t = d3.zoomIdentity.translate(W / 2 - k * x0(s.x), H / 2 - k * y0(s.y)).scale(k);
+  svg.transition().duration(600).call(zoom.transform, t);
+  pts.filter(d => d.id === s.id).classed("hl", true).raise();
+});
+
+window.addEventListener("resize", () => { layout(); render(); });
+layout();
+update();
+</script>
+</body>
+</html>
