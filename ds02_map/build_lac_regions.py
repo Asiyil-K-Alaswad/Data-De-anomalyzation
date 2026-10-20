@@ -49,11 +49,10 @@ centres = np.column_stack([GX.ravel(), GY.ravel()])
 from shapely import contains_xy
 on_land = contains_xy(land, centres[:, 0], centres[:, 1])
 
-out = {"step": STEP, "x0": minx, "y0": miny, "nx": nx, "ny": ny, "net": f"427-0{NET}",
-       "source": "OpenCelliD (CC BY-SA 4.0), ClickHouse mirror, snapshot to Feb 2021",
-       "layers": []}
-for radio, label in LAYERS:
-    c = cells[(cells.radio == radio) & contains_xy(land.buffer(3), cells.x, cells.y)]
+
+def vote_grid(radios):
+    """Area code of every grid square (0 = unassigned) from the given radios' cells."""
+    c = cells[cells.radio.isin(radios) & contains_xy(land.buffer(3), cells.x, cells.y)]
     tree = cKDTree(c[["x", "y"]].to_numpy())
     codes_arr = c.area.to_numpy()
     d, idx = tree.query(centres[on_land], k=K, distance_upper_bound=MAX_KM)
@@ -68,29 +67,51 @@ for radio, label in LAYERS:
         land_codes[i] = max(votes, key=votes.get)
     grid_codes = np.zeros(len(centres), dtype=np.int64)
     grid_codes[on_land] = land_codes
+    return grid_codes, c
 
-    codes = sorted(int(v) for v in np.unique(grid_codes) if v)
-    lut = {code: i + 1 for i, code in enumerate(codes)}      # 0 = unassigned
-    grid = np.array([lut.get(int(v), 0) for v in grid_codes], dtype=np.uint8)
 
-    regions = []
-    for code in codes:
-        sq = [box(x - STEP / 2, y - STEP / 2, x + STEP / 2, y + STEP / 2)
-              for (x, y), v in zip(centres, grid_codes) if v == code]
-        geom = unary_union(sq).simplify(0.15)
-        polys = list(geom.geoms) if geom.geom_type == "MultiPolygon" else [geom]
-        rings = []
-        for p in polys:
-            rings.append([[round(a, 2), round(b, 2)] for a, b in p.exterior.coords])
-            rings += [[[round(a, 2), round(b, 2)] for a, b in r.coords] for r in p.interiors]
-        lp = max(polys, key=lambda p: p.area).representative_point()
-        regions.append({"code": code, "rings": rings, "label": [round(lp.x, 2), round(lp.y, 2)],
-                        "area_km2": round(geom.area, 1),
-                        "n_cells": int((c.area == code).sum())})
-    out["layers"].append({"radio": radio, "label": label, "codes": codes, "n_cells": len(c),
-                          "grid": base64.b64encode(grid.tobytes()).decode(), "regions": regions})
-    print(f"{label}: {len(c)} cells, {len(codes)} codes, "
-          f"{(grid > 0).sum() * STEP ** 2:.0f} km2 assigned")
+def code_at(grid_codes, x, y):
+    """Region code under km-frame points (0 outside the grid or in an unassigned square)."""
+    i = np.floor((np.asarray(x) - minx) / STEP).astype(int)
+    j = np.floor((np.asarray(y) - miny) / STEP).astype(int)
+    inside = (i >= 0) & (j >= 0) & (i < nx) & (j < ny)
+    found = np.zeros(len(i), dtype=np.int64)
+    found[inside] = grid_codes[j[inside] * nx + i[inside]]
+    return found
 
-(HERE / "lac_regions.json").write_text(json.dumps(out, separators=(",", ":")))
-print("wrote lac_regions.json", (HERE / "lac_regions.json").stat().st_size // 1024, "KB")
+
+def main():
+    out = {"step": STEP, "x0": minx, "y0": miny, "nx": nx, "ny": ny, "net": f"427-0{NET}",
+           "source": "OpenCelliD (CC BY-SA 4.0), ClickHouse mirror, snapshot to Feb 2021",
+           "layers": []}
+    for radio, label in LAYERS:
+        grid_codes, c = vote_grid([radio])
+        codes = sorted(int(v) for v in np.unique(grid_codes) if v)
+        lut = {code: i + 1 for i, code in enumerate(codes)}      # 0 = unassigned
+        grid = np.array([lut.get(int(v), 0) for v in grid_codes], dtype=np.uint8)
+
+        regions = []
+        for code in codes:
+            sq = [box(x - STEP / 2, y - STEP / 2, x + STEP / 2, y + STEP / 2)
+                  for (x, y), v in zip(centres, grid_codes) if v == code]
+            geom = unary_union(sq).simplify(0.15)
+            polys = list(geom.geoms) if geom.geom_type == "MultiPolygon" else [geom]
+            rings = []
+            for p in polys:
+                rings.append([[round(a, 2), round(b, 2)] for a, b in p.exterior.coords])
+                rings += [[[round(a, 2), round(b, 2)] for a, b in r.coords] for r in p.interiors]
+            lp = max(polys, key=lambda p: p.area).representative_point()
+            regions.append({"code": code, "rings": rings, "label": [round(lp.x, 2), round(lp.y, 2)],
+                            "area_km2": round(geom.area, 1),
+                            "n_cells": int((c.area == code).sum())})
+        out["layers"].append({"radio": radio, "label": label, "codes": codes, "n_cells": len(c),
+                              "grid": base64.b64encode(grid.tobytes()).decode(), "regions": regions})
+        print(f"{label}: {len(c)} cells, {len(codes)} codes, "
+              f"{(grid > 0).sum() * STEP ** 2:.0f} km2 assigned")
+
+    (HERE / "lac_regions.json").write_text(json.dumps(out, separators=(",", ":")))
+    print("wrote lac_regions.json", (HERE / "lac_regions.json").stat().st_size // 1024, "KB")
+
+
+if __name__ == "__main__":
+    main()
