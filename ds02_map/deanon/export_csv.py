@@ -9,8 +9,8 @@ Writes next to this file:
   AZIMUTHSFORPLOT (a per-cell value), plus the same three columns.
 
 SITETYPE is either Outdoor or Indoor, ignoring capitalisation: "outdoor" -> Outdoor; "indoor",
-"Indoor-SO" and "Pico" -> Indoor (like every indoor cell, all Indoor-SO and Pico cells have
-azimuth 0, i.e. no direction). Per site it is the type of the majority of the site's cells
+"Indoor-SO" and "Pico" -> Indoor (all Indoor-SO and Pico cells have azimuth 0, i.e. no
+direction, as do all but 4 of the 11,864 indoor cells). Per site it is the type of the majority of the site's cells
 (6 sites mix both; a tie would go to Outdoor).
 
 LAC_TAC_MATCH: does the de-anonymised position fall in the OpenCelliD region (network 427-02,
