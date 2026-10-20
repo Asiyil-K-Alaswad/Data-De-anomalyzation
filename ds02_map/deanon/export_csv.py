@@ -6,7 +6,8 @@ Writes next to this file:
   coordinate-only trailing row is dropped, SITETYPE is normalised, see below), plus DEANON_LAT,
   DEANON_LON (the cell's site's de-anonymised position) and LAC_TAC_MATCH.
 - DS02_deanonymised_per_site.csv: one row per site with the same DS02 columns except
-  AZIMUTHSFORPLOT (a per-cell value), plus the same three columns.
+  AZIMUTHSFORPLOT (a per-cell value), plus the same three columns. LAC_TAC is a single code:
+  the numerically largest of the site's codes (e.g. 160 and 1160 -> 1160).
 
 SITETYPE is either Outdoor or Indoor, ignoring capitalisation: "outdoor" -> Outdoor; "indoor",
 "Indoor-SO" and "Pico" -> Indoor (all Indoor-SO and Pico cells have azimuth 0, i.e. no
@@ -20,7 +21,8 @@ LAC map. The UMTS map is not used: its OpenCelliD codes include stale ones DS02 
 (e.g. 28160, 10), which split up areas and would mark otherwise matching cells False. A position
 in no region (at sea, or with no OpenCelliD cell within 6 km) is False. It is left blank when the code never appears in
 that technology's OpenCelliD cells (codes 1, 10101, 14101, 15101), because there is no region
-to compare with. Per site it is True only if every comparable code of the site matches.
+to compare with. Per site it is True only if every comparable code of the site matches (all of
+the site's codes, not only the one shown in LAC_TAC).
 """
 import sys
 from pathlib import Path
@@ -96,7 +98,7 @@ for site, g in cells.groupby("ANONYMIZED_SITECODE", sort=False):
     rows.append({
         "ANONYMIZED_SITECODE": site,
         "ANOM_CELLCODE": ";".join(g.ANOM_CELLCODE),             # every cell, in DS02 order
-        "LAC_TAC": ";".join(str(c) for c in codes),
+        "LAC_TAC": str(max(codes)),                              # largest of the site's codes
         "SITETYPE": "Indoor" if (g.SITETYPE == "Indoor").sum() > (g.SITETYPE == "Outdoor").sum() else "Outdoor",
         "CELLS2G": distinct(g.CELLS2G),
         "CELLS4G": distinct(g.CELLS4G),
