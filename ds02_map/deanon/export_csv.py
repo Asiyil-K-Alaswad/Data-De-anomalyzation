@@ -2,11 +2,16 @@
 
 Run after fit.py:  python3 export_csv.py
 Writes next to this file:
-- DS02_deanonymised_per_cell.csv: every DS02 cell row exactly as in ANOM_DS02_SiteLocations.csv
-  (the coordinate-only trailing row is dropped), plus DEANON_LAT, DEANON_LON (the cell's site's
-  de-anonymised position) and LAC_TAC_MATCH.
-- DS02_deanonymised_per_site.csv: one row per site with the same DS02 columns, plus the same
-  three columns.
+- DS02_deanonymised_per_cell.csv: every DS02 cell row as in ANOM_DS02_SiteLocations.csv (the
+  coordinate-only trailing row is dropped, SITETYPE is normalised, see below), plus DEANON_LAT,
+  DEANON_LON (the cell's site's de-anonymised position) and LAC_TAC_MATCH.
+- DS02_deanonymised_per_site.csv: one row per site with the same DS02 columns except
+  AZIMUTHSFORPLOT (a per-cell value), plus the same three columns.
+
+SITETYPE is either Outdoor or Indoor, ignoring capitalisation: "outdoor" -> Outdoor; "indoor",
+"Indoor-SO" and "Pico" -> Indoor (like every indoor cell, all Indoor-SO and Pico cells have
+azimuth 0, i.e. no direction). Per site it is the type of the majority of the site's cells
+(6 sites mix both; a tie would go to Outdoor).
 
 LAC_TAC_MATCH: does the de-anonymised position fall in the OpenCelliD region (network 427-02,
 built exactly as in build_lac_regions.py) that carries the cell's own code? 3-digit codes are
@@ -57,6 +62,19 @@ def match(site, code):
 fmt = lambda v: f"{v:.7f}"
 bool_txt = lambda b: "" if b is None else str(b)
 
+
+def site_type(raw):
+    t = raw.strip().lower()
+    if t == "outdoor":
+        return "Outdoor"
+    if t in ("indoor", "indoor-so", "pico"):
+        return "Indoor"
+    raise ValueError(f"unknown SITETYPE {raw!r}")
+
+
+cells["SITETYPE"] = cells.SITETYPE.map(site_type)
+
+
 # ---- per cell ----------------------------------------------------------------
 cell_match = [match(s, int(c)) for s, c in zip(cells.ANONYMIZED_SITECODE, cells.LAC_TAC)]
 cells["DEANON_LAT"] = cells.ANONYMIZED_SITECODE.map(fit.LAT).map(fmt)
@@ -78,9 +96,8 @@ for site, g in cells.groupby("ANONYMIZED_SITECODE", sort=False):
     rows.append({
         "ANONYMIZED_SITECODE": site,
         "ANOM_CELLCODE": ";".join(g.ANOM_CELLCODE),             # every cell, in DS02 order
-        "AZIMUTHSFORPLOT": ";".join(g.AZIMUTHSFORPLOT),         # aligned with ANOM_CELLCODE
         "LAC_TAC": ";".join(str(c) for c in codes),
-        "SITETYPE": distinct(g.SITETYPE),
+        "SITETYPE": "Indoor" if (g.SITETYPE == "Indoor").sum() > (g.SITETYPE == "Outdoor").sum() else "Outdoor",
         "CELLS2G": distinct(g.CELLS2G),
         "CELLS4G": distinct(g.CELLS4G),
         "CELLS5G": distinct(g.CELLS5G),
